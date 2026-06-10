@@ -1,0 +1,37 @@
+{
+  "project_name": "nexus_admin — личный кабинет управленца",
+  "project_slug": "nexus_admin",
+  "start_date": "2026-06-10",
+  "calendar_region": "RU",
+  "work_hours_per_day": 8,
+  "work_days": "Mon-Fri",
+  "buffer": 1.30,
+  "github_account": "gram2Claude",
+  "github_repo": "gram2Claude/nexus_admin",
+  "repo_visibility": "public",
+  "target_branch": "master",
+  "dev_branch": "oleg",
+  "sync_times_msk": ["08:00", "14:00", "17:00"],
+  "project_type": "app",
+  "install_cmd": "npm install",
+  "test_cmd": "npm test",
+  "run_cmd": "npm run dev",
+  "smoke_url": "/projects",
+  "deploy": {
+    "target": "linux-vps-cloud",
+    "os": "Ubuntu 24.04 LTS",
+    "hw": "2 vCPU / 4 GB RAM / 40 GB SSD",
+    "runtime": "Docker, Node.js 22 LTS",
+    "access": "по IP, домен/HTTPS позже",
+    "server_provided": false
+  },
+  "design_refs": [
+    "https://dribbble.com/shots/21590789-Logip-Admin-Dashboard-Analytics-UX",
+    "https://ui.shadcn.com/",
+    "https://21st.dev/home"
+  ],
+  "plane": {
+    "used_in_product": false,
+    "note": "Plane не участвует в кабинете (курс на отказ); используется только в WGP-контуре управления самим проектом"
+  }
+}
