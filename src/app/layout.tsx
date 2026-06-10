@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Inter } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
+// Geist с кириллицей — финальное решение управленца (спека 1.1, ревизия 2026-06-10)
+const geist = Geist({
   variable: "--font-sans",
   subsets: ["latin", "cyrillic"],
 });
@@ -25,7 +26,7 @@ export default function RootLayout({
   return (
     <html
       lang="ru"
-      className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geist.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
