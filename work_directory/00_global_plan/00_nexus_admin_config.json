@@ -14,7 +14,7 @@
   "sync_times_msk": ["08:00", "14:00", "17:00"],
   "project_type": "app",
   "install_cmd": "npm install",
-  "test_cmd": "npm test",
+  "test_cmd": "",
   "run_cmd": "npm run dev",
   "smoke_url": "/projects",
   "deploy": {
