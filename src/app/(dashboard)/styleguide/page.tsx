@@ -1,3 +1,6 @@
+import { redirect } from "next/navigation";
+
+import { auth } from "@/auth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -7,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { can } from "@/lib/rbac";
 
 const swatches = [
   { name: "Фон приложения", cls: "bg-background border", hex: "#F8FAFC" },
@@ -26,7 +30,10 @@ const statuses = [
   { name: "Просрочено", cls: "bg-[var(--status-overdue)]" },
 ];
 
-export default function StyleguidePage() {
+export default async function StyleguidePage() {
+  const session = await auth();
+  if (!session?.user || !can.seeStyleguide(session.user.role)) redirect("/projects");
+
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <div>

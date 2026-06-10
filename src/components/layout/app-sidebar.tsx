@@ -32,7 +32,7 @@ const sections = [
   { title: "Отдел продаж", href: "/sales", icon: Banknote, stub: true },
 ];
 
-export function AppSidebar() {
+export function AppSidebar({ showUsers }: { showUsers: boolean }) {
   const pathname = usePathname();
 
   return (
@@ -80,23 +80,24 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              isActive={pathname.startsWith("/users")}
-              tooltip="Пользователи"
-            >
-              {/* Администрирование: видимость только Owner/Admin придёт с RBAC (эпоха 2) */}
-              <Link href="/users">
-                <UserCog />
-                <span>Пользователи</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
+      {showUsers && (
+        <SidebarFooter>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname.startsWith("/users")}
+                tooltip="Пользователи"
+              >
+                <Link href="/users">
+                  <UserCog />
+                  <span>Пользователи</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+      )}
       <SidebarRail />
     </Sidebar>
   );
