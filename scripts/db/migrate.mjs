@@ -5,22 +5,15 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 
-const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const url = process.env.DATABASE_URL;
-if (!url) {
-  console.error("DATABASE_URL не задан (env / .env.local)");
-  process.exit(1);
-}
+import { pgConfig } from "./conn.mjs";
 
-// sslmode в строке перебивает явную ssl-опцию pg — вырезаем и задаём ssl сами
-const cleanUrl = url.replace(/[?&]sslmode=[^&]+/, "");
-const client = new pg.Client({
-  connectionString: cleanUrl,
-  ssl: { rejectUnauthorized: false },
-});
+const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const client = new pg.Client(pgConfig());
 
 await client.connect();
 try {
+  // advisory lock: защита от параллельных прогонов (ревью 2.1)
+  await client.query("SELECT pg_advisory_lock(hashtext('nexus_admin.migrate'))");
   await client.query("CREATE SCHEMA IF NOT EXISTS nexus_admin");
   await client.query(`CREATE TABLE IF NOT EXISTS nexus_admin.schema_migrations (
     name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())`);

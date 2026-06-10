@@ -11,9 +11,16 @@ import {
 
 import { LoginForm } from "./login-form";
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string }>;
+}) {
   const session = await auth();
   if (session?.user) redirect("/projects");
+
+  // deep-link после логина (ревью 2.1); валидация полная — в server action
+  const { callbackUrl } = await searchParams;
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background p-6">
@@ -32,7 +39,7 @@ export default async function LoginPage() {
           <CardTitle>Вход</CardTitle>
         </CardHeader>
         <CardContent>
-          <LoginForm />
+          <LoginForm callbackUrl={callbackUrl} />
         </CardContent>
       </Card>
 

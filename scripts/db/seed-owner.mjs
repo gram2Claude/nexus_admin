@@ -3,20 +3,16 @@
 import bcrypt from "bcryptjs";
 import pg from "pg";
 
-const url = process.env.DATABASE_URL;
+import { pgConfig } from "./conn.mjs";
+
 const email = process.env.OWNER_EMAIL;
 const password = process.env.OWNER_TEMP_PASSWORD;
-if (!url || !email || !password) {
-  console.error("Нужны env: DATABASE_URL, OWNER_EMAIL, OWNER_TEMP_PASSWORD");
+if (!email || !password) {
+  console.error("Нужны env: OWNER_EMAIL, OWNER_TEMP_PASSWORD");
   process.exit(1);
 }
 
-// sslmode в строке перебивает явную ssl-опцию pg — вырезаем и задаём ssl сами
-const cleanUrl = url.replace(/[?&]sslmode=[^&]+/, "");
-const client = new pg.Client({
-  connectionString: cleanUrl,
-  ssl: { rejectUnauthorized: false },
-});
+const client = new pg.Client(pgConfig());
 
 await client.connect();
 try {

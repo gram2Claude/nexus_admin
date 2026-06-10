@@ -1,12 +1,14 @@
 import type { NextAuthConfig } from "next-auth";
 
-// Edge-safe часть конфига (без БД/bcrypt) — используется и в proxy, и в node-рантайме.
+// Базовая часть конфига; полный NextAuth (провайдеры + jwt-перепроверка из БД)
+// собирается в auth.ts. В Next 16 proxy.ts работает в Node — edge-ограничений нет.
 export const authConfig = {
   pages: { signIn: "/login" },
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 дней (решение спеки 2.1)
-    updateAge: 24 * 60 * 60, // скользящее продление раз в сутки
+    // примечание (ревью 2.1): для JWT-стратегии скользящее продление делает
+    // переустановка cookie в proxy при визитах; session.updateAge тут не действует
   },
   callbacks: {
     authorized({ auth }) {

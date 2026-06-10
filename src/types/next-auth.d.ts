@@ -17,5 +17,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     uid?: string;
     role?: Role;
+    /** ts последней перепроверки роли/статуса из БД (ревью 2.1) */
+    chk?: number;
   }
 }
