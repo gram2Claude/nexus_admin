@@ -24,6 +24,7 @@ export function SetPasswordForm({ token }: { token: string }) {
           autoComplete="new-password"
           required
           minLength={8}
+          maxLength={72}
         />
       </div>
       <div className="flex flex-col gap-1.5">
@@ -37,6 +38,7 @@ export function SetPasswordForm({ token }: { token: string }) {
           autoComplete="new-password"
           required
           minLength={8}
+          maxLength={72}
         />
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}

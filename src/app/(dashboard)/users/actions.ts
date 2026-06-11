@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { createInvite } from "@/lib/invites";
+import { createInvite, InviteError } from "@/lib/invites";
 import { can, canModifyUser, type Role } from "@/lib/rbac";
 
 const INVITABLE_ROLES = ["admin", "employee", "client"] as const;
@@ -16,6 +16,11 @@ async function requireManager() {
     throw new Error("Недостаточно прав");
   }
   return session.user;
+}
+
+function uiError(e: unknown, fallback: string): string {
+  // в UI уходят только бизнес-тексты InviteError; сырые ошибки БД — нет (ревью 2.2)
+  return e instanceof InviteError ? e.message : fallback;
 }
 
 export type InviteResult = { error?: string; link?: string; email?: string };
@@ -33,16 +38,14 @@ export async function inviteUser(
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "Некорректный email" };
   if (!INVITABLE_ROLES.includes(role)) return { error: "Некорректная роль" };
-  if (role === "admin" && !can.assignAdmin(actor.role)) {
-    return { error: "Назначать роль Admin может только Owner" };
-  }
 
   try {
-    const token = await createInvite(email, name, role, actor.id);
+    // RBAC над существующей строкой (вкл. assignAdmin) — внутри createInvite, под локом
+    const token = await createInvite(email, name, role, { id: actor.id, role: actor.role });
     revalidatePath("/users");
     return { link: `/set-password?token=${token}`, email };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Не удалось создать приглашение" };
+    return { error: uiError(e, "Не удалось создать приглашение") };
   }
 }
 
@@ -54,22 +57,18 @@ export async function reinviteUser(userId: string): Promise<InviteResult> {
   );
   const target = rows[0];
   if (!target) return { error: "Пользователь не найден" };
-  if (target.status !== "invited") return { error: "Пользователь уже активирован" };
-  if (!canModifyUser(actor.role, target.role as Role)) return { error: "Недостаточно прав" };
-  if (target.role === "admin" && !can.assignAdmin(actor.role)) {
-    return { error: "Перевыпуск инвайта Admin — только Owner" };
-  }
+  if (target.status === "active") return { error: "Пользователь уже активирован" };
 
   try {
     const token = await createInvite(
       target.email,
       target.name,
       target.role as InvitableRole,
-      actor.id
+      { id: actor.id, role: actor.role }
     );
     return { link: `/set-password?token=${token}`, email: target.email };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Не удалось перевыпустить" };
+    return { error: uiError(e, "Не удалось перевыпустить приглашение") };
   }
 }
 
@@ -98,16 +97,33 @@ export async function deleteUser(userId: string): Promise<{ error?: string }> {
   const actor = await requireManager();
   if (userId === actor.id) return { error: "Нельзя удалить самого себя" };
 
-  const { rows } = await db.query(
-    "SELECT email, role FROM nexus_admin.users WHERE id = $1",
-    [userId]
-  );
-  const target = rows[0];
-  if (!target) return { error: "Пользователь не найден" };
-  if (!canModifyUser(actor.role, target.role as Role)) return { error: "Недостаточно прав" };
-
-  await db.query("DELETE FROM nexus_admin.invites WHERE email = $1", [target.email]);
-  await db.query("DELETE FROM nexus_admin.users WHERE id = $1", [userId]);
+  // транзакция + FOR UPDATE: гонка с параллельным инвайтом на тот же email
+  // оставляла «осиротевший» валидный токен (ревью 2.2)
+  const client = await db.connect();
+  try {
+    await client.query("BEGIN");
+    const { rows } = await client.query(
+      "SELECT email, role FROM nexus_admin.users WHERE id = $1 FOR UPDATE",
+      [userId]
+    );
+    const target = rows[0];
+    if (!target) {
+      await client.query("ROLLBACK");
+      return { error: "Пользователь не найден" };
+    }
+    if (!canModifyUser(actor.role, target.role as Role)) {
+      await client.query("ROLLBACK");
+      return { error: "Недостаточно прав" };
+    }
+    await client.query("DELETE FROM nexus_admin.invites WHERE email = $1", [target.email]);
+    await client.query("DELETE FROM nexus_admin.users WHERE id = $1", [userId]);
+    await client.query("COMMIT");
+  } catch (e) {
+    await client.query("ROLLBACK");
+    throw e;
+  } finally {
+    client.release();
+  }
   revalidatePath("/users");
   return {};
 }

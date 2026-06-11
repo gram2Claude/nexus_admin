@@ -1,4 +1,5 @@
 import { LayoutDashboard } from "lucide-react";
+import type { Metadata } from "next";
 
 import {
   Card,
@@ -10,6 +11,9 @@ import {
 import { peekInvite } from "@/lib/invites";
 
 import { SetPasswordForm } from "./set-password-form";
+
+// токен в query: referrer наружу не отдаём (ревью 2.2)
+export const metadata: Metadata = { referrer: "no-referrer" };
 
 export default async function SetPasswordPage({
   searchParams,

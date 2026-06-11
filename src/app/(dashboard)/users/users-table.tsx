@@ -1,7 +1,7 @@
 "use client";
 
 import { Copy, RotateCw, Trash2, UserPlus } from "lucide-react";
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useRef, useState, useTransition } from "react";
 
 import {
   AlertDialog,
@@ -61,19 +61,33 @@ const roleLabels: Record<string, string> = {
 
 function InviteLink({ result }: { result: InviteResult }) {
   const [copied, setCopied] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   if (!result.link) return null;
   const url = `${window.location.origin}${result.link}`;
   return (
     <div className="flex flex-col gap-2 rounded-lg border bg-muted/50 p-3">
-      <span className="text-sm font-medium">Ссылка для {result.email} (показывается один раз):</span>
+      <span className="text-sm font-medium">
+        Ссылка для {result.email} (показывается один раз):
+      </span>
       <div className="flex items-center gap-2">
-        <Input readOnly value={url} className="text-xs" onFocus={(e) => e.target.select()} />
+        <Input
+          ref={inputRef}
+          readOnly
+          value={url}
+          className="text-xs"
+          onFocus={(e) => e.target.select()}
+        />
         <Button
           size="sm"
           variant="outline"
           onClick={async () => {
-            await navigator.clipboard.writeText(url);
-            setCopied(true);
+            try {
+              await navigator.clipboard.writeText(url);
+              setCopied(true);
+            } catch {
+              // вне secure context (HTTP по IP) clipboard API недоступен — выделяем для ручного копирования
+              inputRef.current?.select();
+            }
           }}
         >
           <Copy className="size-4" />
@@ -87,6 +101,51 @@ function InviteLink({ result }: { result: InviteResult }) {
   );
 }
 
+function InviteForm({
+  invitableRoles,
+}: {
+  invitableRoles: readonly ("admin" | "employee" | "client")[];
+}) {
+  const [inviteResult, formAction, invitePending] = useActionState(inviteUser, undefined);
+
+  return (
+    <form action={formAction} className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="inv-email" className="text-sm font-medium">
+          Email *
+        </label>
+        <Input id="inv-email" name="email" type="email" required />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="inv-name" className="text-sm font-medium">
+          Имя
+        </label>
+        <Input id="inv-name" name="name" />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-medium">Роль *</label>
+        <Select name="role" defaultValue="employee">
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {invitableRoles.map((r) => (
+              <SelectItem key={r} value={r}>
+                {roleLabels[r]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      {inviteResult?.error && <p className="text-sm text-destructive">{inviteResult.error}</p>}
+      {inviteResult?.link && <InviteLink result={inviteResult} />}
+      <Button type="submit" disabled={invitePending}>
+        {invitePending ? "Создаём…" : "Создать приглашение"}
+      </Button>
+    </form>
+  );
+}
+
 export function UsersTable({
   users,
   actorId,
@@ -96,7 +155,8 @@ export function UsersTable({
   actorId: string;
   canAssignAdmin: boolean;
 }) {
-  const [inviteResult, formAction, invitePending] = useActionState(inviteUser, undefined);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [formKey, setFormKey] = useState(0);
   const [reinviteLinks, setReinviteLinks] = useState<Record<string, InviteResult>>({});
   const [actionError, setActionError] = useState<string | undefined>();
   const [pending, startTransition] = useTransition();
@@ -114,7 +174,14 @@ export function UsersTable({
             Доступ в кабинет — только по приглашению
           </p>
         </div>
-        <Dialog>
+        <Dialog
+          open={inviteOpen}
+          onOpenChange={(o) => {
+            setInviteOpen(o);
+            // ремоунт формы при каждом открытии — ссылка прошлого инвайта не «залипает» (ревью 2.2)
+            if (o) setFormKey((k) => k + 1);
+          }}
+        >
           <DialogTrigger asChild>
             <Button>
               <UserPlus className="size-4" />
@@ -128,42 +195,7 @@ export function UsersTable({
                 Будет создана одноразовая ссылка установки пароля (7 дней).
               </DialogDescription>
             </DialogHeader>
-            <form action={formAction} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="inv-email" className="text-sm font-medium">
-                  Email *
-                </label>
-                <Input id="inv-email" name="email" type="email" required />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="inv-name" className="text-sm font-medium">
-                  Имя
-                </label>
-                <Input id="inv-name" name="name" />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium">Роль *</label>
-                <Select name="role" defaultValue="employee">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {invitableRoles.map((r) => (
-                      <SelectItem key={r} value={r}>
-                        {roleLabels[r]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {inviteResult?.error && (
-                <p className="text-sm text-destructive">{inviteResult.error}</p>
-              )}
-              {inviteResult?.link && <InviteLink result={inviteResult} />}
-              <Button type="submit" disabled={invitePending}>
-                {invitePending ? "Создаём…" : "Создать приглашение"}
-              </Button>
-            </form>
+            <InviteForm key={formKey} invitableRoles={invitableRoles} />
           </DialogContent>
         </Dialog>
       </div>
@@ -185,8 +217,8 @@ export function UsersTable({
             {users.map((u) => {
               const isOwner = u.role === "owner";
               const isSelf = u.id === actorId;
-              const editable = !isOwner && !isSelf;
-              const roleOptions = invitableRoles;
+              // согласовано с canModifyUser: admin не трогает другого admin (ревью 2.2)
+              const editable = !isOwner && !isSelf && (canAssignAdmin || u.role !== "admin");
               return (
                 <TableRow key={u.id}>
                   <TableCell className="font-medium">{u.email}</TableCell>
@@ -194,8 +226,9 @@ export function UsersTable({
                   <TableCell>
                     {editable ? (
                       <Select
+                        key={`${u.id}-${u.role}`}
                         defaultValue={u.role}
-                        disabled={pending || (u.role === "admin" && !canAssignAdmin)}
+                        disabled={pending}
                         onValueChange={(v) =>
                           startTransition(async () => {
                             const r = await changeRole(u.id, v);
@@ -207,14 +240,11 @@ export function UsersTable({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {roleOptions.map((r) => (
+                          {invitableRoles.map((r) => (
                             <SelectItem key={r} value={r}>
                               {roleLabels[r]}
                             </SelectItem>
                           ))}
-                          {u.role === "admin" && !canAssignAdmin && (
-                            <SelectItem value="admin">Admin</SelectItem>
-                          )}
                         </SelectContent>
                       </Select>
                     ) : (
@@ -281,6 +311,14 @@ export function UsersTable({
                                   startTransition(async () => {
                                     const r = await deleteUser(u.id);
                                     setActionError(r.error);
+                                    if (!r.error) {
+                                      // погасшие ссылки удалённого не должны висеть на экране (ревью 2.2)
+                                      setReinviteLinks((m) => {
+                                        const next = { ...m };
+                                        delete next[u.id];
+                                        return next;
+                                      });
+                                    }
                                   })
                                 }
                               >
