@@ -49,9 +49,39 @@ export function GanttChart({
 }) {
   const stamps = projects.flatMap((p) => [utc(p.startDate!), utc(p.endDate!)]);
   if (!stamps.length) return null;
-  const pad = 4 * DAY;
-  const d0 = Math.min(...stamps) - pad;
-  const d1 = Math.max(...stamps) + pad;
+  const min = Math.min(...stamps);
+  const max = Math.max(...stamps);
+
+  // Домен оси зависит от уровня (фидбек управленца: «гистограмма должна уменьшаться
+  // при укрупнении»): чем крупнее группировка, тем шире календарный диапазон → полосы короче.
+  let d0: number;
+  let d1: number;
+  if (level === 1) {
+    d0 = min - 4 * DAY;
+    d1 = max + 4 * DAY;
+  } else if (level === 2) {
+    // снап к понедельникам ± 2 недели
+    const s = new Date(min);
+    s.setUTCHours(0, 0, 0, 0);
+    while (s.getUTCDay() !== 1) s.setUTCDate(s.getUTCDate() - 1);
+    d0 = +s - 14 * DAY;
+    const e = new Date(max);
+    e.setUTCHours(0, 0, 0, 0);
+    while (e.getUTCDay() !== 1) e.setUTCDate(e.getUTCDate() + 1);
+    d1 = +e + 14 * DAY;
+  } else {
+    // снап к первым числам месяцев ± 1 месяц
+    const s = new Date(min);
+    s.setUTCDate(1);
+    s.setUTCHours(0, 0, 0, 0);
+    s.setUTCMonth(s.getUTCMonth() - 1);
+    d0 = +s;
+    const e = new Date(max);
+    e.setUTCDate(1);
+    e.setUTCHours(0, 0, 0, 0);
+    e.setUTCMonth(e.getUTCMonth() + 2);
+    d1 = +e;
+  }
   const span = d1 - d0;
   const x = (t: number) => Math.max(0, Math.min(100, ((t - d0) / span) * 100));
 
