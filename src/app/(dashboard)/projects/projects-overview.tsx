@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Pencil } from "lucide-react";
+import { ChevronLeft, ChevronRight, ListFilter, Pencil, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -14,6 +14,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { updateProjectDescription } from "./actions";
@@ -100,14 +109,33 @@ export function ProjectsOverview({
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("active");
   const [ganttLevel, setGanttLevel] = useState<GanttLevel>(1);
+  // фильтр-панель (фидбек управленца): поиск по подстроке + чекбоксы проектов
+  const [query, setQuery] = useState("");
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const toggleProject = (id: string) =>
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   const [editing, setEditing] = useState<ProjectVM | null>(null);
   const [text, setText] = useState("");
   const [error, setError] = useState<string | undefined>();
   const [pending, startTransition] = useTransition();
 
-  const visible = projects.filter((p) =>
-    filter === "all" ? true : p.status === (filter === "active" ? "active" : "completed")
-  );
+  const q = query.trim().toLowerCase();
+  const visible = projects
+    .filter((p) =>
+      filter === "all" ? true : p.status === (filter === "active" ? "active" : "completed")
+    )
+    .filter((p) => !hidden.has(p.id))
+    .filter(
+      (p) =>
+        !q ||
+        p.name.toLowerCase().includes(q) ||
+        (p.description ?? "").toLowerCase().includes(q)
+    );
   // на Ганте в режиме «все» завершённые приглушаются; в «завершённые» — показываются как есть
   const ganttProjects = visible.filter((p) => p.startDate && p.endDate);
   // итог портфеля: все проекты + нераспределённый бакет (фидбек управленца)
@@ -146,6 +174,54 @@ export function ProjectsOverview({
             <TabsTrigger value="all">Все</TabsTrigger>
           </TabsList>
         </Tabs>
+      </div>
+
+      {/* фильтр-панель: поиск + чекбоксы проектов (фидбек управленца) */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Поиск проекта…"
+            className="w-64 pl-8"
+          />
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <ListFilter className="size-4" />
+              Проекты ({projects.length - hidden.size}/{projects.length})
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-72">
+            <DropdownMenuLabel>Показывать проекты</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {projects.map((p) => (
+              <DropdownMenuCheckboxItem
+                key={p.id}
+                checked={!hidden.has(p.id)}
+                onCheckedChange={() => toggleProject(p.id)}
+                onSelect={(e) => e.preventDefault()} // меню не закрываем — удобно отмечать несколько
+                className="truncate"
+              >
+                {p.name}
+              </DropdownMenuCheckboxItem>
+            ))}
+            {hidden.size > 0 && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuCheckboxItem
+                  checked={false}
+                  onCheckedChange={() => setHidden(new Set())}
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  Показать все
+                </DropdownMenuCheckboxItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
