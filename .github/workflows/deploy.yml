@@ -1,0 +1,35 @@
+# Автодеплой на VPS по пушу в master (решение управленца 2026-06-11, «вариант 2»).
+# Безопасность: ключ из VPS_DEPLOY_KEY на сервере ограничен форс-командой
+# (/usr/local/bin/nexus-deploy.sh, no-pty, без форвардингов) — украденный ключ
+# умеет только запустить деплой. Адрес сервера и host key — в Secrets,
+# т.к. репозиторий публичный и боевой адрес в нём не публикуется (DEPLOY.md).
+name: deploy
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Deploy via SSH (форс-команда на сервере)
+        env:
+          SSH_KEY: ${{ secrets.VPS_DEPLOY_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_HOST_KEY: ${{ secrets.VPS_HOST_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$VPS_HOST_KEY" > ~/.ssh/known_hosts
+          # сборка на сервере идёт 3-8 минут — держим сессию keepalive'ами
+          ssh -o StrictHostKeyChecking=yes \
+              -o ServerAliveInterval=30 -o ServerAliveCountMax=20 \
+              root@"$VPS_HOST" deploy
