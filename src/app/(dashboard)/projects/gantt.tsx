@@ -81,10 +81,10 @@ export function GanttChart({
 
   return (
     <div className="flex flex-col gap-1">
-      {/* шкала: месяцы сверху, даты начала недель — под ними у отсечек */}
+      {/* шкала сверху: только месяцы; даты недель — на нижней оси (фидбек управленца) */}
       <div className="flex">
         <div className="w-44 shrink-0" />
-        <div className="relative h-9 flex-1">
+        <div className="relative h-5 flex-1">
           {monthLabels.map((m) => (
             <span
               key={m.ts}
@@ -94,17 +94,6 @@ export function GanttChart({
               {m.label}
             </span>
           ))}
-          {weeks
-            .filter((_, i) => i % weekLabelStep === 0)
-            .map((w) => (
-              <span
-                key={w.ts}
-                className="absolute bottom-0 -translate-x-1/2 text-[10px] tabular-nums text-muted-foreground/80"
-                style={{ left: `${w.at}%` }}
-              >
-                {fmtTs(w.ts)}
-              </span>
-            ))}
         </div>
       </div>
 
@@ -113,10 +102,11 @@ export function GanttChart({
         {/* недельная сетка + линия «сегодня» на всю высоту */}
         <div className="pointer-events-none absolute inset-0 left-44">
           <div className="relative h-full">
+            {/* пунктир — линия явно ведёт к своей дате на нижней оси (фидбек управленца) */}
             {weeks.map((w) => (
               <div
                 key={w.ts}
-                className="absolute inset-y-0 border-l border-border/60"
+                className="absolute inset-y-0 border-l border-dashed border-border"
                 style={{ left: `${w.at}%` }}
               />
             ))}
@@ -139,7 +129,6 @@ export function GanttChart({
             <div key={p.id} className={`flex items-center ${dim ? "opacity-50" : ""}`}>
               <div className="w-44 shrink-0 pr-3">
                 <div className="truncate text-sm font-medium">{p.name}</div>
-                <div className="text-xs tabular-nums text-muted-foreground">{percent}%</div>
               </div>
               <div className="relative h-12 flex-1">
                 {/* полоса планового периода */}
@@ -156,6 +145,13 @@ export function GanttChart({
                     }}
                   />
                 </div>
+                {/* % выполнения — справа от полосы (фидбек управленца) */}
+                <span
+                  className="absolute top-1/2 -translate-y-1/2 pl-1.5 text-xs font-medium tabular-nums"
+                  style={{ left: `${Math.min(bR, 93)}%` }}
+                >
+                  {percent}%
+                </span>
                 {/* сегменты эпох: насечка + hover-зона с тултипом */}
                 {p.epochs.map((e) => {
                   if (!e.startDate || !e.endDate) return null;
@@ -200,6 +196,24 @@ export function GanttChart({
             </div>
           );
         })}
+      </div>
+
+      {/* нижняя ось: даты начала недель под своими пунктирами */}
+      <div className="flex">
+        <div className="w-44 shrink-0" />
+        <div className="relative h-5 flex-1 border-t border-border">
+          {weeks
+            .filter((_, i) => i % weekLabelStep === 0)
+            .map((w) => (
+              <span
+                key={w.ts}
+                className="absolute top-0.5 -translate-x-1/2 text-[10px] tabular-nums text-muted-foreground"
+                style={{ left: `${w.at}%` }}
+              >
+                {fmtTs(w.ts)}
+              </span>
+            ))}
+        </div>
       </div>
 
       <p className="pl-44 pt-1 text-xs text-muted-foreground">
