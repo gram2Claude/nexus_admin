@@ -233,15 +233,8 @@ export function ProjectsOverview({
               dimCompleted={filter === "all"}
               todayIso={todayIso}
             />
-            {canSeeCosts &&
-              unallocated &&
-              (unallocated.tokens > 0 || unallocated.hours > 0 || unallocated.costUsd > 0) && (
-              <p className="pl-44 pt-2 text-xs tabular-nums text-muted-foreground">
-                Нераспределённое (затраты без привязки к задачам, весь портфель):{" "}
-                {fmtTime(unallocated.hours)} · {fmtTokens(unallocated.tokens)} ток ·{" "}
-                ≈{fmtUsd(unallocated.costUsd)}
-              </p>
-            )}
+            {/* строка «нераспределённое» убрана (фидбек управленца):
+                бакет уже входит в итоги портфеля под заголовком */}
           </CardContent>
         </Card>
       )}
