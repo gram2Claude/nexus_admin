@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+.env*
+work_directory
+# ops-файлы не нужны в build-context (ревью эпохи 6): на VPS рядом лежит живой
+# Caddyfile — без исключения он попадал бы в контекст/кэш сборки
+scripts
+Caddyfile*
+migrations
+.claude
+*.md
+!README.md

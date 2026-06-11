@@ -38,6 +38,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.production.example
 
 # vercel
 .vercel
@@ -48,7 +49,7 @@ next-env.d.ts
 
 <<<<<<< Updated upstream
 
-# локальные артефакты синка
+# Р»РѕРєР°Р»СЊРЅС‹Рµ Р°СЂС‚РµС„Р°РєС‚С‹ СЃРёРЅРєР°
 scripts/sync/sync.log
 scripts/sync/sync-run.cmd
 =======
