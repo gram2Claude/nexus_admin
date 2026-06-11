@@ -40,8 +40,10 @@ const roleLabels: Record<string, string> = {
 
 export function AppHeader({
   user,
+  freshness,
 }: {
   user: { name: string; role: string };
+  freshness: { label: string; stale: boolean };
 }) {
   const pathname = usePathname();
   const section = Object.keys(titles).find((p) => pathname.startsWith(p));
@@ -60,10 +62,14 @@ export function AppHeader({
       </Breadcrumb>
 
       <div className="ml-auto flex items-center gap-4">
-        {/* Метка свежести данных — реальное значение подключит синк (NEXADM-15) */}
-        <span className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
+        {/* Свежесть данных из sync_meta (NEXADM-15); warning при > 12 ч */}
+        <span
+          className={`hidden items-center gap-1.5 text-xs sm:flex ${
+            freshness.stale ? "font-medium text-amber-600" : "text-muted-foreground"
+          }`}
+        >
           <RefreshCw className="size-3.5" />
-          обновлено: —
+          {freshness.stale ? `данные устарели (${freshness.label})` : `обновлено: ${freshness.label}`}
         </span>
         <Separator orientation="vertical" className="!h-5" />
         <DropdownMenu>

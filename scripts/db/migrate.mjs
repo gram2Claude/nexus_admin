@@ -8,12 +8,19 @@ import pg from "pg";
 import { pgConfig } from "./conn.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const client = new pg.Client(pgConfig());
+// session-mode: advisory lock корректно живёт/освобождается с сессией (ревью 3.1)
+const client = new pg.Client(pgConfig({ sessionMode: true }));
 
 await client.connect();
 try {
-  // advisory lock: защита от параллельных прогонов (ревью 2.1)
-  await client.query("SELECT pg_advisory_lock(hashtext('nexus_admin.migrate'))");
+  // try-lock: занято → выходим, не виснем (ревью 2.1 + 3.1)
+  const lock = await client.query(
+    "SELECT pg_try_advisory_lock(hashtext('nexus_admin.migrate')) AS ok"
+  );
+  if (!lock.rows[0].ok) {
+    console.error("Миграции уже выполняются в другом процессе — выход");
+    process.exit(2);
+  }
   await client.query("CREATE SCHEMA IF NOT EXISTS nexus_admin");
   await client.query(`CREATE TABLE IF NOT EXISTS nexus_admin.schema_migrations (
     name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())`);
