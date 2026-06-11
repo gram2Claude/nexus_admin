@@ -58,6 +58,14 @@ export function fmtUsd(n: number): string {
   return `$${n.toLocaleString("ru-RU", { maximumFractionDigits: 0 })}`;
 }
 
+/** Фактическое время в формате «00 ч 50 мин» (решение управленца, 2026-06-11). */
+export function fmtTime(hours: number): string {
+  const total = Math.round(hours * 60);
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  return `${String(h).padStart(2, "0")} ч ${String(m).padStart(2, "0")} мин`;
+}
+
 type Filter = "active" | "completed" | "all";
 
 function plural(n: number, one: string, few: string, many: string): string {
@@ -168,7 +176,7 @@ export function ProjectsOverview({
                 )}
                 {canSeeCosts && p.fact && (
                   <span className="text-xs tabular-nums text-muted-foreground">
-                    факт: {p.fact.hours.toFixed(1)} ч · {fmtTokens(p.fact.tokens)} ток ·{" "}
+                    факт: {fmtTime(p.fact.hours)} · {fmtTokens(p.fact.tokens)} ток ·{" "}
                     ≈{fmtUsd(p.fact.costUsd)}
                   </span>
                 )}
