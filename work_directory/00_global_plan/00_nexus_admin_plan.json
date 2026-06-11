@@ -3,9 +3,9 @@
     "name": "nexus_admin — личный кабинет управленца",
     "slug": "nexus_admin",
     "start_date": "2026-06-10",
-    "global_h": 176.5,
-    "global_ai_h": 33.75,
-    "global_end_date": "2026-07-17",
+    "global_h": 180.5,
+    "global_ai_h": 34.5,
+    "global_end_date": "2026-07-02",
     "plane_project_id": "3b94977b-4582-49a7-8ed7-40647022004a",
     "plane_identifier": "NEXADM"
   },
@@ -458,20 +458,20 @@
       "name": "Эпоха 4. Раздел «Проекты»: обзор и Гант",
       "order": 4,
       "description": "Страница обзора с фильтром и карточками, Гант-компонент с эпохами, заливкой % и тултипами факта.",
-      "epoch_h": 28.25,
-      "epoch_ai_h": 5.25,
-      "start_date": "2026-07-03",
-      "end_date": "2026-07-09",
+      "epoch_h": 32.25,
+      "epoch_ai_h": 6,
+      "start_date": "2026-06-10",
+      "end_date": "2026-06-17",
       "sprints": [
         {
           "id": "s4_1",
           "name": "Спринт 4.1. Обзор проектов",
           "order": 1,
-          "sprint_h": 8.75,
-          "sprint_ai_h": 1.5,
+          "sprint_h": 12.75,
+          "sprint_ai_h": 2.25,
           "sprint_days": 2,
-          "start_date": "2026-07-03",
-          "end_date": "2026-07-06",
+          "start_date": "2026-06-10",
+          "end_date": "2026-06-11",
           "tasks": [
             {
               "id": "t20",
@@ -504,6 +504,19 @@
               "plane_identifier": "NEXADM-21",
               "plane_linked_cycle": true,
               "plane_linked_module": true
+            },
+            {
+              "id": "t33",
+              "name": "Переключатель тем: светлая / тёмная Dark indigo",
+              "description": "Обе темы по решению управленца (2026-06-11): next-themes, класс dark, токены Dark indigo глобально, переключатель в меню пользователя; выбор сохраняется.",
+              "done_criteria": "Переключение мгновенно меняет тему всего кабинета; выбор переживает перезагрузку; обе темы корректны на всех существующих страницах.",
+              "realistic_h": 2,
+              "pessimistic_h": 4,
+              "estimate_h": 4,
+              "ai_estimate_h": 0.75,
+              "task_type": "code",
+              "status": "in_progress",
+              "plane_identifier": "NEXADM-33"
             }
           ],
           "plane_cycle_id": "59c51e5c-9937-4a25-93ba-f27a96cf866c"
@@ -515,8 +528,8 @@
           "sprint_h": 19.5,
           "sprint_ai_h": 3.75,
           "sprint_days": 3,
-          "start_date": "2026-07-07",
-          "end_date": "2026-07-09",
+          "start_date": "2026-06-15",
+          "end_date": "2026-06-17",
           "tasks": [
             {
               "id": "t22",
@@ -579,8 +592,8 @@
       "description": "Страница проекта: аккордеон эпохи→спринты→задачи→модели AI; role-based видимость.",
       "epoch_h": 26.75,
       "epoch_ai_h": 5.25,
-      "start_date": "2026-07-10",
-      "end_date": "2026-07-15",
+      "start_date": "2026-06-18",
+      "end_date": "2026-06-23",
       "sprints": [
         {
           "id": "s5_1",
@@ -589,8 +602,8 @@
           "sprint_h": 12,
           "sprint_ai_h": 2.5,
           "sprint_days": 2,
-          "start_date": "2026-07-10",
-          "end_date": "2026-07-13",
+          "start_date": "2026-06-18",
+          "end_date": "2026-06-19",
           "tasks": [
             {
               "id": "t25",
@@ -634,8 +647,8 @@
           "sprint_h": 14.75,
           "sprint_ai_h": 2.75,
           "sprint_days": 2,
-          "start_date": "2026-07-14",
-          "end_date": "2026-07-15",
+          "start_date": "2026-06-22",
+          "end_date": "2026-06-23",
           "tasks": [
             {
               "id": "t27",
@@ -698,8 +711,8 @@
       "description": "Docker-сборка, развёртывание на Linux VPS по IP, смоук, документация, приёмка первой очереди.",
       "epoch_h": 14.75,
       "epoch_ai_h": 2.75,
-      "start_date": "2026-07-16",
-      "end_date": "2026-07-17",
+      "start_date": "2026-06-24",
+      "end_date": "2026-06-25",
       "sprints": [
         {
           "id": "s6_1",
@@ -708,8 +721,8 @@
           "sprint_h": 14.75,
           "sprint_ai_h": 2.75,
           "sprint_days": 2,
-          "start_date": "2026-07-16",
-          "end_date": "2026-07-17",
+          "start_date": "2026-06-24",
+          "end_date": "2026-06-25",
           "tasks": [
             {
               "id": "t30",
