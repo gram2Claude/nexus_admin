@@ -34,6 +34,7 @@ export default async function DashboardLayout({
   const role = session.user.role as Role;
   const user = {
     name: session.user.name ?? session.user.email ?? "—",
+    email: session.user.email ?? "—",
     role,
   };
   const freshness = await getFreshness();

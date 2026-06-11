@@ -43,7 +43,7 @@ export function AppHeader({
   user,
   freshness,
 }: {
-  user: { name: string; role: string };
+  user: { name: string; email: string; role: string };
   freshness: { label: string; stale: boolean };
 }) {
   const pathname = usePathname();
@@ -89,7 +89,13 @@ export function AppHeader({
             </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel className="truncate">{user.name}</DropdownMenuLabel>
+            <DropdownMenuLabel className="grid leading-tight">
+              <span className="truncate">{user.name}</span>
+              {/* почта под именем — фидбек управленца (00_04.jpg) */}
+              <span className="truncate text-xs font-normal text-muted-foreground">
+                {user.email}
+              </span>
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onSelect={(e) => {
