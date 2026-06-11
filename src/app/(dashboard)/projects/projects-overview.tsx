@@ -203,9 +203,9 @@ export function ProjectsOverview({
                 checked={!hidden.has(p.id)}
                 onCheckedChange={() => toggleProject(p.id)}
                 onSelect={(e) => e.preventDefault()} // меню не закрываем — удобно отмечать несколько
-                className="truncate"
               >
-                {p.name}
+                {/* truncate на span, не на пункте: иначе текст заезжал под галочку (00_05.jpg) */}
+                <span className="min-w-0 truncate">{p.name}</span>
               </DropdownMenuCheckboxItem>
             ))}
             {hidden.size > 0 && (
