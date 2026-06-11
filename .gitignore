@@ -47,13 +47,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-<<<<<<< Updated upstream
 
 # Р»РѕРєР°Р»СЊРЅС‹Рµ Р°СЂС‚РµС„Р°РєС‚С‹ СЃРёРЅРєР°
 scripts/sync/sync.log
 scripts/sync/sync-run.cmd
-=======
 .gstack/
->>>>>>> Stashed changes
 TEMP_VPS_ACCESS.txt
 TEMP_NEW_PASSWORD.txt

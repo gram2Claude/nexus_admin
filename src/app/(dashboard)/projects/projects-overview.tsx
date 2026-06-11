@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil } from "lucide-react";
+import { ChevronLeft, ChevronRight, ListFilter, Pencil, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -14,10 +14,25 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { updateProjectDescription } from "./actions";
-import { GanttChart } from "./gantt";
+import { GanttChart, type GanttLevel } from "./gantt";
+
+const ganttLevelLabels: Record<GanttLevel, string> = {
+  1: "Детальный",
+  2: "По неделям",
+  3: "По месяцам",
+};
 
 export type EpochVM = {
   extId: string;
@@ -93,14 +108,30 @@ export function ProjectsOverview({
 }) {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("active");
+  const [ganttLevel, setGanttLevel] = useState<GanttLevel>(1);
+  // фильтр проектов (00_06.jpg): поиск живёт внутри дропдауна и фильтрует список чекбоксов
+  const [query, setQuery] = useState("");
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const toggleProject = (id: string) =>
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   const [editing, setEditing] = useState<ProjectVM | null>(null);
   const [text, setText] = useState("");
   const [error, setError] = useState<string | undefined>();
   const [pending, startTransition] = useTransition();
 
-  const visible = projects.filter((p) =>
-    filter === "all" ? true : p.status === (filter === "active" ? "active" : "completed")
-  );
+  const q = query.trim().toLowerCase();
+  // поиск сужает только список в дропдауне; карточки управляются чекбоксами и табом статуса
+  const dropdownProjects = projects.filter((p) => !q || p.name.toLowerCase().includes(q));
+  const visible = projects
+    .filter((p) =>
+      filter === "all" ? true : p.status === (filter === "active" ? "active" : "completed")
+    )
+    .filter((p) => !hidden.has(p.id));
   // на Ганте в режиме «все» завершённые приглушаются; в «завершённые» — показываются как есть
   const ganttProjects = visible.filter((p) => p.startDate && p.endDate);
   // итог портфеля: все проекты + нераспределённый бакет (фидбек управленца)
@@ -132,13 +163,69 @@ export function ProjectsOverview({
             </>
           )}
         </div>
-        <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
-          <TabsList>
-            <TabsTrigger value="active">Активные</TabsTrigger>
-            <TabsTrigger value="completed">Завершённые</TabsTrigger>
-            <TabsTrigger value="all">Все</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {/* дропдаун проектов переехал в шапку к табам статуса (00_06.jpg);
+            ширина блока = правой колонке грида (50% − половина gap-4): левый край
+            кнопки совпадает с левым краем карточки, сама кнопка тянется до табов */}
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-[calc(50%-0.5rem)]">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="min-w-0 flex-1 justify-start gap-1.5">
+                <ListFilter className="size-4" />
+                Проекты ({projects.length - hidden.size}/{projects.length})
+              </Button>
+            </DropdownMenuTrigger>
+            {/* меню ровно по ширине кнопки — края совпадают с колонкой карточек */}
+            <DropdownMenuContent align="start" className="w-(--radix-dropdown-menu-trigger-width)">
+              <DropdownMenuLabel>Показывать проекты</DropdownMenuLabel>
+              <div
+                className="relative px-1 pb-1"
+                // набор текста не должен дёргать typeahead-навигацию меню; Escape пропускаем — закрывает меню
+                onKeyDown={(e) => {
+                  if (e.key !== "Escape") e.stopPropagation();
+                }}
+              >
+                <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Поиск проекта…"
+                  className="h-8 pl-8"
+                />
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuCheckboxItem
+                checked={hidden.size === 0}
+                onCheckedChange={() =>
+                  setHidden(hidden.size === 0 ? new Set(projects.map((p) => p.id)) : new Set())
+                }
+                onSelect={(e) => e.preventDefault()}
+              >
+                Выбрать все
+              </DropdownMenuCheckboxItem>
+              {dropdownProjects.map((p) => (
+                <DropdownMenuCheckboxItem
+                  key={p.id}
+                  checked={!hidden.has(p.id)}
+                  onCheckedChange={() => toggleProject(p.id)}
+                  onSelect={(e) => e.preventDefault()} // меню не закрываем — удобно отмечать несколько
+                >
+                  {/* truncate на span, не на пункте: иначе текст заезжал под галочку (00_05.jpg) */}
+                  <span className="min-w-0 truncate">{p.name}</span>
+                </DropdownMenuCheckboxItem>
+              ))}
+              {dropdownProjects.length === 0 && (
+                <p className="px-2 py-1.5 text-sm text-muted-foreground">Ничего не найдено</p>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
+            <TabsList>
+              <TabsTrigger value="active">Активные</TabsTrigger>
+              <TabsTrigger value="completed">Завершённые</TabsTrigger>
+              <TabsTrigger value="all">Все</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -222,9 +309,37 @@ export function ProjectsOverview({
       {ganttProjects.length > 0 && (
         <Card className="py-4">
           <CardHeader className="px-4">
-            <CardTitle className="text-base">
-              Гант {filter === "active" ? "активных проектов" : "проектов"}
-            </CardTitle>
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="text-base">
+                Гант {filter === "active" ? "активных проектов" : "проектов"}
+              </CardTitle>
+              {/* переключатель уровней детализации (фидбек управленца) */}
+              <div className="flex items-center gap-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="size-7 p-0"
+                  disabled={ganttLevel === 1}
+                  onClick={() => setGanttLevel((ganttLevel - 1) as GanttLevel)}
+                  aria-label="Детальнее"
+                >
+                  <ChevronLeft className="size-4" />
+                </Button>
+                <span className="w-24 text-center text-xs text-muted-foreground">
+                  {ganttLevelLabels[ganttLevel]}
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="size-7 p-0"
+                  disabled={ganttLevel === 3}
+                  onClick={() => setGanttLevel((ganttLevel + 1) as GanttLevel)}
+                  aria-label="Крупнее"
+                >
+                  <ChevronRight className="size-4" />
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="px-4">
             <GanttChart
@@ -232,6 +347,7 @@ export function ProjectsOverview({
               canSeeCosts={canSeeCosts}
               dimCompleted={filter === "all"}
               todayIso={todayIso}
+              level={ganttLevel}
             />
             {/* строка «нераспределённое» убрана (фидбек управленца):
                 бакет уже входит в итоги портфеля под заголовком */}
