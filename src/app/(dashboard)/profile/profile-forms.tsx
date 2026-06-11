@@ -62,13 +62,18 @@ export function ProfileForms({
           >
             <Label htmlFor="profile-name">Имя</Label>
             <p className="text-xs text-muted-foreground">
-              Отображается в шапке и в колонке «Исполнитель»
+              {/* «Исполнитель» в задачах приходит из timechecker — там своё имя */}
+              Отображается в шапке и в списках участников проектов
             </p>
             <div className="flex gap-2">
               <Input
                 id="profile-name"
+                autoComplete="name"
                 value={nameValue}
-                onChange={(e) => setNameValue(e.target.value)}
+                onChange={(e) => {
+                  setNameValue(e.target.value);
+                  setNameMsg(null);
+                }}
                 maxLength={60}
                 required
               />
@@ -106,6 +111,8 @@ export function ProfileForms({
               });
             }}
           >
+            {/* скрытое поле: менеджеры паролей привязывают новый пароль к учётке */}
+            <input type="hidden" name="username" autoComplete="username" value={email} readOnly />
             <div className="flex flex-col gap-2">
               <Label htmlFor="pwd-current">Текущий пароль</Label>
               <Input

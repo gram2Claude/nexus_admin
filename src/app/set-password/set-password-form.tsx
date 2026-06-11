@@ -15,7 +15,7 @@ export function SetPasswordForm({ token }: { token: string }) {
       <input type="hidden" name="token" value={token} />
       <div className="flex flex-col gap-1.5">
         <label htmlFor="password" className="text-sm font-medium">
-          Пароль
+          РџР°СЂРѕР»СЊ
         </label>
         <Input
           id="password"
@@ -23,13 +23,13 @@ export function SetPasswordForm({ token }: { token: string }) {
           type="password"
           autoComplete="new-password"
           required
-          minLength={8}
+          minLength={12}
           maxLength={72}
         />
       </div>
       <div className="flex flex-col gap-1.5">
         <label htmlFor="password2" className="text-sm font-medium">
-          Повторите пароль
+          РџРѕРІС‚РѕСЂРёС‚Рµ РїР°СЂРѕР»СЊ
         </label>
         <Input
           id="password2"
@@ -37,13 +37,13 @@ export function SetPasswordForm({ token }: { token: string }) {
           type="password"
           autoComplete="new-password"
           required
-          minLength={8}
+          minLength={12}
           maxLength={72}
         />
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
       <Button type="submit" disabled={pending} className="w-full">
-        {pending ? "Сохраняем…" : "Сохранить и войти"}
+        {pending ? "РЎРѕС…СЂР°РЅСЏРµРјвЂ¦" : "РЎРѕС…СЂР°РЅРёС‚СЊ Рё РІРѕР№С‚Рё"}
       </Button>
     </form>
   );

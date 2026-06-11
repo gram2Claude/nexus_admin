@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 
-import { auth } from "@/auth";
+import { auth, unstable_update } from "@/auth";
 import { db } from "@/lib/db";
 import { isBlocked, registerFail, resetFails } from "@/lib/login-rate-limit";
 
@@ -14,10 +14,10 @@ export async function updateName(name: string): Promise<{ error?: string }> {
   const trimmed = name.trim();
   if (!trimmed || trimmed.length > 60) return { error: "Имя — от 1 до 60 символов" };
   await db.query(
-    "UPDATE nexus_admin.users SET name = $1, updated_at = now() WHERE id = $2",
+    "UPDATE nexus_admin.users SET name = $1, updated_at = now() WHERE id = $2 AND status = 'active'",
     [trimmed, session.user.id]
   );
-  revalidatePath("/", "layout"); // имя в шапке и в «Исполнителе»
+  revalidatePath("/", "layout"); // имя в шапке и в списках участников
   return {};
 }
 
@@ -30,7 +30,10 @@ export async function changePassword(
   if (!session?.user?.id) return { error: "Нет сессии" };
 
   if (next1.length < 12) return { error: "Новый пароль — минимум 12 символов" };
-  if (next1.length > 72) return { error: "Новый пароль — максимум 72 символа" }; // bcrypt
+  // предел bcrypt — 72 БАЙТА utf-8, не символа: кириллица режется вдвое (ревью эпохи 7)
+  if (Buffer.byteLength(next1, "utf8") > 72) {
+    return { error: "Новый пароль слишком длинный (максимум 72 байта)" };
+  }
   if (next1 !== next2) return { error: "Новые пароли не совпадают" };
 
   // rate-limit как на логине: защита от перебора текущего пароля изнутри сессии (спека 08)
@@ -38,6 +41,12 @@ export async function changePassword(
   const ip = (h.get("x-forwarded-for") ?? "local").split(",")[0].trim();
   const key = `chpw:${session.user.id}:${ip}`;
   if (isBlocked(key)) return { error: "Слишком много попыток — подождите 15 минут" };
+
+  // мегабайтную строку в bcrypt.compare не пускаем (паттерн authorize, ревью эпохи 7)
+  if (Buffer.byteLength(current, "utf8") > 72) {
+    registerFail(key);
+    return { error: "Текущий пароль неверен" };
+  }
 
   const { rows } = await db.query(
     "SELECT password_hash FROM nexus_admin.users WHERE id = $1 AND status = 'active'",
@@ -51,9 +60,14 @@ export async function changePassword(
   resetFails(key);
 
   const newHash = await bcrypt.hash(next1, 12);
+  // pw_changed_at гасит другие JWT-сессии при ближайшей ревалидации (ревью эпохи 7)
   await db.query(
-    "UPDATE nexus_admin.users SET password_hash = $1, updated_at = now() WHERE id = $2",
+    `UPDATE nexus_admin.users
+     SET password_hash = $1, pw_changed_at = now(), updated_at = now()
+     WHERE id = $2`,
     [newHash, session.user.id]
   );
+  // токен инициатора получает свежий pwt — его сессия не гаснет (trigger='update')
+  await unstable_update({});
   return {};
 }

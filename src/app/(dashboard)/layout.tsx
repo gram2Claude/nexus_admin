@@ -35,7 +35,9 @@ export default async function DashboardLayout({
   // имя/почта из БД, не из JWT: после переименования в профиле шапка обновляется
   // сразу, а не через 10-минутную ревалидацию токена (эпоха 7)
   const [{ rows: userRows }, freshness] = await Promise.all([
-    db.query("SELECT name, email FROM nexus_admin.users WHERE id = $1", [session.user.id]),
+    db
+      .query("SELECT name, email FROM nexus_admin.users WHERE id = $1", [session.user.id])
+      .catch(() => ({ rows: [] })), // фолбэк на JWT ниже — сбой не роняет кабинет
     getFreshness(),
   ]);
   const user = {

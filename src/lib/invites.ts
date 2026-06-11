@@ -127,7 +127,8 @@ export async function consumeInvite(token: string, password: string): Promise<st
       return null;
     }
     const upd = await client.query(
-      `UPDATE nexus_admin.users SET password_hash = $2, status = 'active', updated_at = now()
+      `UPDATE nexus_admin.users
+       SET password_hash = $2, status = 'active', pw_changed_at = now(), updated_at = now()
        WHERE email = $1 AND status = 'invited'`,
       [email, passwordHash]
     );
