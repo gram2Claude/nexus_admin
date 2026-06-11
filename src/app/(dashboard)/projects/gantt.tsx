@@ -256,10 +256,11 @@ export function GanttChart({
             ? monthLabels.map((m) => (
                 <span
                   key={m.ts}
-                  className="absolute top-0.5 -translate-x-1/2 text-[10px] text-muted-foreground"
+                  className="absolute top-0.5 -translate-x-1/2 text-[10px] tabular-nums text-muted-foreground"
                   style={{ left: `${m.at}%` }}
                 >
-                  {m.label}
+                  {/* дата начала месяца (фидбек управленца) */}
+                  {fmtTs(m.ts)}
                 </span>
               ))
             : weeks
