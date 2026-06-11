@@ -4,5 +4,7 @@
 # инвайт-токены (решение ревью 2.2 — не логировать).
 
 1-2-3-4.sslip.io {
+	# HSTS уместен при 30-дневном auth-cookie (ревью эпохи 6)
+	header Strict-Transport-Security "max-age=31536000"
 	reverse_proxy nexus-admin:3000
 }

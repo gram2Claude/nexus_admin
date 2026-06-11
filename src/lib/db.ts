@@ -24,12 +24,16 @@ function makePool(): Pool {
   if (!existsSync(caPath)) throw new Error(`Нет CA-файла ${caPath} — TLS-проверку не отключаем`);
 
   // Pool маленький: Supabase pooler (transaction mode) + соседство с timechecker (риск спеки §6)
-  return new Pool({
+  const pool = new Pool({
     connectionString: u.toString(),
     ssl: { ca: readFileSync(caPath, "utf8") },
     max: 3,
     idleTimeoutMillis: 30_000,
   });
+  // без обработчика error за idle-клиента роняет процесс (EventEmitter); обрыв
+  // соединения до облачного pooler'а — штатное событие (ревью эпохи 6)
+  pool.on("error", (e) => console.error("pg idle client error:", e.message));
+  return pool;
 }
 
 const globalForPg = globalThis as unknown as { pgPool?: Pool };
