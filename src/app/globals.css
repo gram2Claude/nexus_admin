@@ -93,6 +93,9 @@
   /* CTA и заливка Ганта: */
   --cta: #6366f1;
   --gantt-fill: #6366f1;
+  /* Вариации оттенков (рампа индиго): градиент полос и прозрачные подсветки */
+  --gantt-gradient: linear-gradient(90deg, #818cf8, #4f46e5);
+  --gantt-glow: 0 0 12px rgba(99, 102, 241, 0.25);
 }
 
 /* Тёмная тема «Dark indigo» — по цветовой системе управленца (2026-06-11):
@@ -126,6 +129,9 @@
   --status-wip: #8f91f5;
   --status-todo: #64748b;
   --status-overdue: #ef4444;
+  /* Вариации: на тёмном градиент ярче (primary-400→600) + свечение заметнее */
+  --gantt-gradient: linear-gradient(90deg, #8f91f5, #5558cf);
+  --gantt-glow: 0 0 16px rgba(99, 102, 241, 0.45);
 }
 
 .dark {

@@ -52,14 +52,31 @@ function ThemePreview({
           <div className="text-lg font-semibold">Проект nexus_admin</div>
           <div className="text-sm text-muted-foreground">Эпоха 4 · обзор и Гант</div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="h-2 w-40 overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full"
-              style={{ width: "60%", background: "var(--gantt-fill)" }}
-            />
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-40 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full"
+                style={{ width: "60%", background: "var(--gantt-fill)" }}
+              />
+            </div>
+            <span className="text-sm font-medium tabular-nums">60%</span>
+            <span className="text-xs text-muted-foreground">плоская</span>
           </div>
-          <span className="text-sm font-medium tabular-nums">60%</span>
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-40 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: "60%",
+                  background: "var(--gantt-gradient)",
+                  boxShadow: "var(--gantt-glow)",
+                }}
+              />
+            </div>
+            <span className="text-sm font-medium tabular-nums">60%</span>
+            <span className="text-xs text-muted-foreground">градиент + свечение</span>
+          </div>
         </div>
         <div className="text-xs tabular-nums text-muted-foreground">
           106.75/176.5 ч · 18.2M ток · ≈$4 120
@@ -72,10 +89,28 @@ function ThemePreview({
             </Badge>
           ))}
         </div>
+        {/* прозрачные подсветки из рампы primary (наведи мышь на кнопки — hover полупрозрачный) */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          {[20, 15, 10, 5].map((a) => (
+            <span
+              key={a}
+              className="rounded-md px-2 py-1 text-xs font-medium"
+              style={{ background: `color-mix(in srgb, var(--cta) ${a}%, transparent)` }}
+            >
+              подсветка {a}%
+            </span>
+          ))}
+        </div>
         <div className="flex flex-wrap gap-2">
-          <Button size="sm">Открыть проект</Button>
-          <Button size="sm" variant="secondary">
-            Вторичная
+          <Button size="sm" className="transition-colors hover:opacity-85">
+            Открыть проект
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="transition-colors hover:bg-[color-mix(in_srgb,var(--cta)_15%,transparent)] hover:text-[var(--cta)]"
+          >
+            Прозрачный hover
           </Button>
           <Button size="sm" variant="outline">
             Контурная
