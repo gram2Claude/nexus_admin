@@ -127,11 +127,16 @@ export function GanttChart({
           const dim = dimCompleted && p.status === "completed";
           return (
             <div key={p.id} className={`flex items-center ${dim ? "opacity-50" : ""}`}>
+              {/* название в 2 строки: часть до « — » и часть после (фидбек управленца) */}
               <div className="w-44 shrink-0 pr-3">
-                <div className="truncate text-sm font-medium">{p.name}</div>
-                {p.description && (
-                  <div className="truncate text-xs text-muted-foreground">{p.description}</div>
-                )}
+                <div className="truncate text-sm font-medium">
+                  {p.name.split(" — ")[0]}
+                </div>
+                <div className="truncate text-xs text-muted-foreground">
+                  {p.name.includes(" — ")
+                    ? p.name.slice(p.name.indexOf(" — ") + 3)
+                    : (p.description ?? "")}
+                </div>
               </div>
               <div className="relative h-12 flex-1">
                 {/* полоса планового периода */}
