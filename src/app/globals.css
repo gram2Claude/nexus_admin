@@ -100,10 +100,12 @@
 
 /* Тёмная тема «Dark indigo» — по цветовой системе управленца (2026-06-11):
    primary-рампа #6366F1, поверхности secondary/tertiary (#020617/#0F172A),
-   текст #F1F5F9/#94A3B8. Для сравнения на /styleguide (скоуп-класс).
+   текст #F1F5F9/#94A3B8. Глобально включается классом .dark (next-themes,
+   NEXADM-33); .theme-dark-indigo — алиас для блока сравнения на /styleguide.
    Отступления от «Usage» (см. спеку): Background взят тёмный #020617 (не индиго),
    Border — primary-900 #222352 (сплошной индиго-бордер слишком громкий),
    индиго оставлен кнопкам/CTA/фокусу/заливке Ганта. */
+.dark,
 .theme-dark-indigo {
   --background: #020617;
   --foreground: #f1f5f9;
@@ -125,6 +127,19 @@
   --ring: #6366f1;
   --cta: #6366f1;
   --gantt-fill: #6366f1;
+  --sidebar: #0f172a;
+  --sidebar-foreground: #f1f5f9;
+  --sidebar-primary: #6366f1;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #222352;
+  --sidebar-accent-foreground: #b4b6f8;
+  --sidebar-border: #222352;
+  --sidebar-ring: #6366f1;
+  --chart-1: #8f91f5;
+  --chart-2: #60a5fa;
+  --chart-3: #fbbf24;
+  --chart-4: #a78bfa;
+  --chart-5: #94a3b8;
   --status-done: #22c55e;
   --status-wip: #8f91f5;
   --status-todo: #64748b;
