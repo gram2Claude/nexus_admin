@@ -49,6 +49,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           .trim();
         const password = String(creds?.password ?? "");
         if (!email || !password) return null;
+        if (password.length > 72) return null; // bcrypt-предел; мегабайтные строки не хэшируем
 
         if (isBlocked(email)) {
           await bcrypt.compare(password, DUMMY_HASH); // единое время ответа
