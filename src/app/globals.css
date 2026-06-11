@@ -93,41 +93,64 @@
   /* CTA и заливка Ганта: */
   --cta: #6366f1;
   --gantt-fill: #6366f1;
+  /* Вариации оттенков (рампа индиго): градиент полос и прозрачные подсветки */
+  --gantt-gradient: linear-gradient(90deg, #818cf8, #4f46e5);
+  --gantt-glow: 0 0 12px rgba(99, 102, 241, 0.25);
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+/* Тёмная тема «Dark indigo» — по цветовой системе управленца (2026-06-11):
+   primary-рампа #6366F1, поверхности secondary/tertiary (#020617/#0F172A),
+   текст #F1F5F9/#94A3B8. Глобально включается классом .dark (next-themes,
+   NEXADM-33); .theme-dark-indigo — алиас для блока сравнения на /styleguide.
+   Отступления от «Usage» (см. спеку): Background взят тёмный #020617 (не индиго),
+   Border — primary-900 #222352 (сплошной индиго-бордер слишком громкий),
+   индиго оставлен кнопкам/CTA/фокусу/заливке Ганта. */
+.dark,
+.theme-dark-indigo {
+  --background: #020617;
+  --foreground: #f1f5f9;
+  --card: #0f172a;
+  --card-foreground: #f1f5f9;
+  --popover: #0f172a;
+  --popover-foreground: #f1f5f9;
+  --primary: #6366f1;
+  --primary-foreground: #ffffff;
+  --secondary: #1e293b;
+  --secondary-foreground: #f1f5f9;
+  --muted: #141430;
+  --muted-foreground: #94a3b8;
+  --accent: #222352;
+  --accent-foreground: #b4b6f8;
+  --destructive: #ef4444;
+  --border: #222352;
+  --input: #33357d;
+  --ring: #6366f1;
+  --cta: #6366f1;
+  --gantt-fill: #6366f1;
+  --sidebar: #0f172a;
+  --sidebar-foreground: #f1f5f9;
+  --sidebar-primary: #6366f1;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #222352;
+  --sidebar-accent-foreground: #b4b6f8;
+  --sidebar-border: #222352;
+  --sidebar-ring: #6366f1;
+  --chart-1: #8f91f5;
+  --chart-2: #60a5fa;
+  --chart-3: #fbbf24;
+  --chart-4: #a78bfa;
+  --chart-5: #94a3b8;
+  --status-done: #22c55e;
+  --status-wip: #8f91f5;
+  --status-todo: #64748b;
+  --status-overdue: #ef4444;
+  /* Вариации: на тёмном градиент ярче (primary-400→600) + свечение заметнее */
+  --gantt-gradient: linear-gradient(90deg, #8f91f5, #5558cf);
+  --gantt-glow: 0 0 16px rgba(99, 102, 241, 0.45);
 }
+
+/* шаблонный oklch-блок .dark удалён (ревью эпохи 4, HIGH): он шёл позже в каскаде
+   и перетирал Dark indigo — primary в тёмной теме становился почти белым */
 
 @layer base {
   * {

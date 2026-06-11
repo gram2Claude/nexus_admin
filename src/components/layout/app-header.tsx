@@ -1,6 +1,7 @@
 "use client";
 
-import { LogOut, RefreshCw } from "lucide-react";
+import { LogOut, Moon, RefreshCw, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 import { usePathname } from "next/navigation";
 
 import { logout } from "@/app/(dashboard)/actions";
@@ -46,6 +47,7 @@ export function AppHeader({
   freshness: { label: string; stale: boolean };
 }) {
   const pathname = usePathname();
+  const { resolvedTheme, setTheme } = useTheme();
   const section = Object.keys(titles).find((p) => pathname.startsWith(p));
   const initial = (user.name[0] ?? "?").toUpperCase();
 
@@ -86,8 +88,22 @@ export function AppHeader({
               </span>
             </div>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
+          <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuLabel className="truncate">{user.name}</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault(); // меню не закрываем — удобно щёлкать туда-обратно
+                setTheme(resolvedTheme === "dark" ? "light" : "dark");
+              }}
+            >
+              {resolvedTheme === "dark" ? (
+                <Sun className="size-4" />
+              ) : (
+                <Moon className="size-4" />
+              )}
+              {resolvedTheme === "dark" ? "Светлая тема" : "Тёмная тема"}
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => logout()}>
               <LogOut className="size-4" />

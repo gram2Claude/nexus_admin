@@ -83,6 +83,51 @@ export async function modelFactsByTask(readableId: string): Promise<ModelFact[]>
   return rows;
 }
 
+export type EpochFact = {
+  project_slug: string;
+  epoch_ext_id: string;
+  fact_minutes: number;
+  tokens: number;
+  cost_usd: number;
+};
+
+/** Факт по эпохам всех проектов (тултипы Ганта, NEXADM-23). */
+export async function epochFactRollupAll(): Promise<EpochFact[]> {
+  const { rows } = await db.query<EpochFact>(
+    `SELECT p.slug AS project_slug, e.ext_id AS epoch_ext_id,
+            SUM(f.fact_minutes)::float8 AS fact_minutes,
+            SUM(f.tokens)::float8 AS tokens,
+            SUM(f.cost_usd)::float8 AS cost_usd
+     FROM nexus_admin.tasks t
+     JOIN nexus_admin.sprints s ON s.id = t.sprint_id
+     JOIN nexus_admin.epochs e ON e.id = s.epoch_id
+     JOIN nexus_admin.projects p ON p.id = t.project_id
+     JOIN nexus_admin.v_task_fact f
+       ON f.readable_id = t.readable_id AND f.project_slug = p.slug
+     WHERE NOT p.archived AND NOT e.archived
+     GROUP BY p.slug, e.ext_id`
+  );
+  return rows;
+}
+
+export type ProjectFact = {
+  project_slug: string;
+  fact_minutes: number;
+  tokens: number;
+  cost_usd: number;
+};
+
+/** Факт по проектам целиком (строка факта в карточках обзора, NEXADM-21). */
+export async function projectFactRollupAll(): Promise<ProjectFact[]> {
+  const { rows } = await db.query<ProjectFact>(
+    `SELECT project_slug, SUM(fact_minutes)::float8 AS fact_minutes,
+            SUM(tokens)::float8 AS tokens, SUM(cost_usd)::float8 AS cost_usd
+     FROM nexus_admin.v_task_fact
+     GROUP BY project_slug`
+  );
+  return rows;
+}
+
 /** Бакет «нераспределённое» (затраты без привязки к задаче) — уровень портфеля. */
 export async function unallocatedModelFacts(): Promise<ModelFact[]> {
   const { rows } = await db.query<ModelFact>(
