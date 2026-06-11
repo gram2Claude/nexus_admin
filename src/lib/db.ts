@@ -3,9 +3,14 @@ import { join } from "node:path";
 
 import { Pool } from "pg";
 
-// Fail fast: без DATABASE_URL приложение не должно молча подключаться к localhost (ревью 2.1)
-const url = process.env.DATABASE_URL;
-if (!url) throw new Error("DATABASE_URL не задан");
+// Приложение ходит ограниченной ролью nexus_admin_app (NEXADM-16): схема кабинета +
+// view факта; public.* недоступен. Тихий fallback на админский DSN запрещён в проде
+// (ревью 3.2: потеря env молча обнуляла бы границу роли).
+if (process.env.NODE_ENV === "production" && !process.env.DATABASE_URL_APP) {
+  throw new Error("DATABASE_URL_APP не задан — в production админский DSN запрещён");
+}
+const url = process.env.DATABASE_URL_APP ?? process.env.DATABASE_URL;
+if (!url) throw new Error("DATABASE_URL_APP / DATABASE_URL не заданы");
 
 // sslmode в строке перебивает явную ssl-опцию pg — убираем через URL API (ревью 2.1:
 // regex ломался на нескольких query-параметрах)
