@@ -21,7 +21,7 @@ try {
     const r = await client.query(
       `UPDATE nexus_admin.projects
        SET description = $2, description_source = 'org-memory'
-       WHERE slug = $1 AND (description IS NULL OR description_source = 'org-memory')`,
+       WHERE slug = $1 AND description_source IS DISTINCT FROM 'manual'`,
       [slug, description]
     );
     console.log(`${slug}: ${r.rowCount ? "описание установлено" : "пропущено (manual)"}`);

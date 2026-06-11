@@ -17,8 +17,10 @@ $lines = @(
 )
 [System.IO.File]::WriteAllLines($wrapper, $lines)
 
-foreach ($time in "08:05", "14:05", "17:05") {
+# 23:05 added (review 3.1): without it the 17:05->08:05 gap is 15h and the 12h
+# staleness warning fires every morning as a false positive.
+foreach ($time in "08:05", "14:05", "17:05", "23:05") {
     $name = "nexus-admin-sync-" + $time.Replace(":", "")
     schtasks /Create /F /TN $name /SC DAILY /ST $time /TR "`"$wrapper`""
 }
-Write-Output "Done: 3 Task Scheduler entries registered (wrapper: $wrapper)."
+Write-Output "Done: 4 Task Scheduler entries registered (wrapper: $wrapper)."
