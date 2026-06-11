@@ -69,24 +69,42 @@ export function GanttChart({
     weeks.push({ ts: +wCur, at: x(+wCur) });
     wCur.setUTCDate(wCur.getUTCDate() + 7);
   }
+  // подписи дат у недельных отсечек (фидбек управленца); при плотной сетке — через одну
+  const weekLabelStep = weeks.length > 14 ? 2 : 1;
+  const fmtTs = (ts: number) => {
+    const d = new Date(ts);
+    return `${String(d.getUTCDate()).padStart(2, "0")}.${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+  };
+
   const today = utc(todayIso);
   const todayX = today >= d0 && today <= d1 ? x(today) : null;
 
   return (
     <div className="flex flex-col gap-1">
-      {/* шкала */}
+      {/* шкала: месяцы сверху, даты начала недель — под ними у отсечек */}
       <div className="flex">
         <div className="w-44 shrink-0" />
-        <div className="relative h-6 flex-1">
+        <div className="relative h-9 flex-1">
           {monthLabels.map((m) => (
             <span
               key={m.ts}
-              className="absolute top-0 text-xs text-muted-foreground"
+              className="absolute top-0 text-xs font-medium text-muted-foreground"
               style={{ left: `${m.at}%` }}
             >
               {m.label}
             </span>
           ))}
+          {weeks
+            .filter((_, i) => i % weekLabelStep === 0)
+            .map((w) => (
+              <span
+                key={w.ts}
+                className="absolute bottom-0 -translate-x-1/2 text-[10px] tabular-nums text-muted-foreground/80"
+                style={{ left: `${w.at}%` }}
+              >
+                {fmtTs(w.ts)}
+              </span>
+            ))}
         </div>
       </div>
 
