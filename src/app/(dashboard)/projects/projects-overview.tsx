@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -17,7 +17,13 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { updateProjectDescription } from "./actions";
-import { GanttChart } from "./gantt";
+import { GanttChart, type GanttLevel } from "./gantt";
+
+const ganttLevelLabels: Record<GanttLevel, string> = {
+  1: "Детальный",
+  2: "По неделям",
+  3: "По месяцам",
+};
 
 export type EpochVM = {
   extId: string;
@@ -93,6 +99,7 @@ export function ProjectsOverview({
 }) {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("active");
+  const [ganttLevel, setGanttLevel] = useState<GanttLevel>(1);
   const [editing, setEditing] = useState<ProjectVM | null>(null);
   const [text, setText] = useState("");
   const [error, setError] = useState<string | undefined>();
@@ -222,9 +229,37 @@ export function ProjectsOverview({
       {ganttProjects.length > 0 && (
         <Card className="py-4">
           <CardHeader className="px-4">
-            <CardTitle className="text-base">
-              Гант {filter === "active" ? "активных проектов" : "проектов"}
-            </CardTitle>
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="text-base">
+                Гант {filter === "active" ? "активных проектов" : "проектов"}
+              </CardTitle>
+              {/* переключатель уровней детализации (фидбек управленца) */}
+              <div className="flex items-center gap-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="size-7 p-0"
+                  disabled={ganttLevel === 1}
+                  onClick={() => setGanttLevel((ganttLevel - 1) as GanttLevel)}
+                  aria-label="Детальнее"
+                >
+                  <ChevronLeft className="size-4" />
+                </Button>
+                <span className="w-24 text-center text-xs text-muted-foreground">
+                  {ganttLevelLabels[ganttLevel]}
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="size-7 p-0"
+                  disabled={ganttLevel === 3}
+                  onClick={() => setGanttLevel((ganttLevel + 1) as GanttLevel)}
+                  aria-label="Крупнее"
+                >
+                  <ChevronRight className="size-4" />
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="px-4">
             <GanttChart
@@ -232,6 +267,7 @@ export function ProjectsOverview({
               canSeeCosts={canSeeCosts}
               dimCompleted={filter === "all"}
               todayIso={todayIso}
+              level={ganttLevel}
             />
             {/* строка «нераспределённое» убрана (фидбек управленца):
                 бакет уже входит в итоги портфеля под заголовком */}

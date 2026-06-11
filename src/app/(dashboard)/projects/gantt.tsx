@@ -30,16 +30,22 @@ const fmtD = (iso: string | null) => (iso ? `${iso.slice(8, 10)}.${iso.slice(5, 
  * для seeCosts); вертикальная линия — «сегодня» (приходит с сервера — без
  * hydration mismatch). Позиционированные div'ы с % от временного диапазона.
  */
+/** Уровни детализации (фидбек управленца): 1 — детальный (насечки эпох + недели),
+ *  2 — по неделям (без насечек), 3 — по месяцам (только месячная сетка). */
+export type GanttLevel = 1 | 2 | 3;
+
 export function GanttChart({
   projects,
   canSeeCosts,
   dimCompleted,
   todayIso,
+  level,
 }: {
   projects: ProjectVM[];
   canSeeCosts: boolean;
   dimCompleted: boolean;
   todayIso: string;
+  level: GanttLevel;
 }) {
   const stamps = projects.flatMap((p) => [utc(p.startDate!), utc(p.endDate!)]);
   if (!stamps.length) return null;
@@ -101,11 +107,11 @@ export function GanttChart({
 
       {/* строки проектов */}
       <div className="relative">
-        {/* недельная сетка + линия «сегодня» на всю высоту */}
+        {/* сетка (недели или месяцы — по уровню) + линия «сегодня» на всю высоту */}
         <div className="pointer-events-none absolute inset-0 left-44">
           <div className="relative h-full">
             {/* пунктир — линия явно ведёт к своей дате на нижней оси (фидбек управленца) */}
-            {weeks.map((w) => (
+            {(level === 3 ? months : weeks).map((w) => (
               <div
                 key={w.ts}
                 className="absolute inset-y-0 border-l border-dashed border-border"
@@ -166,8 +172,8 @@ export function GanttChart({
                 >
                   {percent}%
                 </span>
-                {/* сегменты эпох: насечка + hover-зона с тултипом */}
-                {p.epochs.map((e) => {
+                {/* сегменты эпох: насечка + hover-зона с тултипом — только детальный уровень */}
+                {level === 1 && p.epochs.map((e) => {
                   if (!e.startDate || !e.endDate) return null;
                   const eL = x(utc(e.startDate));
                   const eR = x(utc(e.endDate) + DAY);
@@ -212,26 +218,37 @@ export function GanttChart({
         })}
       </div>
 
-      {/* нижняя ось: даты начала недель под своими пунктирами */}
+      {/* нижняя ось: даты недель (уровни 1–2) или месяцы (уровень 3) под пунктирами */}
       <div className="flex">
         <div className="w-44 shrink-0" />
         <div className="relative h-5 flex-1 border-t border-border">
-          {weeks
-            .filter((_, i) => i % weekLabelStep === 0)
-            .map((w) => (
-              <span
-                key={w.ts}
-                className="absolute top-0.5 -translate-x-1/2 text-[10px] tabular-nums text-muted-foreground"
-                style={{ left: `${w.at}%` }}
-              >
-                {fmtTs(w.ts)}
-              </span>
-            ))}
+          {level === 3
+            ? monthLabels.map((m) => (
+                <span
+                  key={m.ts}
+                  className="absolute top-0.5 -translate-x-1/2 text-[10px] text-muted-foreground"
+                  style={{ left: `${m.at}%` }}
+                >
+                  {m.label}
+                </span>
+              ))
+            : weeks
+                .filter((_, i) => i % weekLabelStep === 0)
+                .map((w) => (
+                  <span
+                    key={w.ts}
+                    className="absolute top-0.5 -translate-x-1/2 text-[10px] tabular-nums text-muted-foreground"
+                    style={{ left: `${w.at}%` }}
+                  >
+                    {fmtTs(w.ts)}
+                  </span>
+                ))}
         </div>
       </div>
 
       <p className="pl-44 pt-1 text-xs text-muted-foreground">
-        Заливка — выполнено по часам · насечки — границы эпох (наведи для деталей) ·{" "}
+        Заливка — выполнено по часам ·{" "}
+        {level === 1 && <>насечки — границы эпох (наведи для деталей) · </>}
         <span className="text-[var(--status-overdue)]">красная линия</span> — сегодня
       </p>
     </div>
