@@ -45,40 +45,46 @@ export async function taskFactsByProject(projectSlug: string): Promise<TaskFact[
   return rows;
 }
 
-/** Roll-up факта на уровень спринтов/эпох/проекта: join план-задач кабинета с фактом. */
-export async function levelFactRollup(
+/**
+ * Roll-up факта на уровень спринтов проекта. Архивные задачи ВКЛЮЧЕНЫ
+ * (их затраты реальны) — единообразно с epochFactRollupAll (ревью эпохи 5).
+ */
+export async function sprintFactRollup(
   projectSlug: string
-): Promise<Map<string, LevelFact & { sprint_ext_id: string; epoch_ext_id: string }>> {
+): Promise<Map<string, LevelFact>> {
   const { rows } = await db.query(
-    `SELECT s.ext_id AS sprint_ext_id, e.ext_id AS epoch_ext_id,
+    `SELECT s.ext_id AS sprint_ext_id,
             SUM(f.fact_minutes)::float8 AS fact_minutes,
             SUM(f.tokens)::float8 AS tokens,
             SUM(f.cost_usd)::float8 AS cost_usd
      FROM nexus_admin.tasks t
      JOIN nexus_admin.sprints s ON s.id = t.sprint_id
-     JOIN nexus_admin.epochs e ON e.id = s.epoch_id
      JOIN nexus_admin.projects p ON p.id = t.project_id
-     -- project_slug в join: одинаковый readable_id в двух проектах не задваивает (ревью 3.2)
      JOIN nexus_admin.v_task_fact f
        ON f.readable_id = t.readable_id AND f.project_slug = p.slug
-     -- архивные задачи НЕ исключаются: их фактические затраты реальны (ревью 3.2)
-     WHERE p.slug = $1
-     GROUP BY s.ext_id, e.ext_id`,
+     WHERE p.slug = $1 AND NOT s.archived AND NOT p.archived
+     GROUP BY s.ext_id`,
     [projectSlug]
   );
   return new Map(rows.map((r) => [r.sprint_ext_id, r]));
 }
 
-/** Разбивка задачи по моделям AI (клик по задаче, эпоха 5). */
-export async function modelFactsByTask(readableId: string): Promise<ModelFact[]> {
+/**
+ * Разбивка задачи по моделям AI (клик по задаче, эпоха 5).
+ * Скоуп по project_slug обязателен: readable_id не уникален глобально (ревью эпохи 5).
+ */
+export async function modelFactsByTask(
+  readableId: string,
+  projectSlug: string
+): Promise<ModelFact[]> {
   const { rows } = await db.query<ModelFact>(
     `SELECT readable_id, project_slug, model, minutes::float8 AS minutes,
             tokens::float8 AS tokens, cache_read::float8 AS cache_read,
             cache_creation::float8 AS cache_creation, cost_usd::float8 AS cost_usd
      FROM nexus_admin.v_task_model_fact
-     WHERE readable_id = $1 AND (tokens > 0 OR minutes > 0)
+     WHERE readable_id = $1 AND project_slug = $2 AND (tokens > 0 OR minutes > 0)
      ORDER BY cost_usd DESC`,
-    [readableId]
+    [readableId, projectSlug]
   );
   return rows;
 }

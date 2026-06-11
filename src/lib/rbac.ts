@@ -11,8 +11,12 @@ export const can = {
   seeAllProjects: (r: Role) => r === "owner" || r === "admin",
   /** Видеть затраты: токены, ≈$, часы. Employee — НЕ видит (решение спеки 2.1) */
   seeCosts: (r: Role) => r === "owner" || r === "admin",
-  /** Drill-down до моделей AI (Employee — по своим проектам, без затрат) */
-  drillDownModels: (r: Role) => r !== "client",
+  /**
+   * Drill-down до моделей AI. Реализация эпохи 5: панель моделей целиком состоит
+   * из затрат (время/токены/$), поэтому фактический gate — seeCosts (Owner/Admin);
+   * Employee видит структуру drill-down своих проектов без затратных колонок.
+   */
+  drillDownModels: (r: Role) => r === "owner" || r === "admin",
   /** Пригласить / удалить пользователя / сменить роль (кроме Owner) */
   manageUsers: (r: Role) => r === "owner" || r === "admin",
   /** Назначить роль Admin */

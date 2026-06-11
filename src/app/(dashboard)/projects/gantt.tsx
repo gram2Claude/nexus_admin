@@ -6,7 +6,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { fmtTokens, fmtUsd, pct, type ProjectVM } from "./projects-overview";
+import { fmtTime, fmtTokens, fmtUsd, pct, type ProjectVM } from "./projects-overview";
 
 const DAY = 86_400_000;
 const MONTHS = [
@@ -191,7 +191,7 @@ export function GanttChart({
                               по матрице прав (ревью эпохи 4, P1) */}
                           {canSeeCosts && e.fact && (
                             <span className="text-xs tabular-nums">
-                              факт: {e.fact.hours.toFixed(1)} ч · {fmtTokens(e.fact.tokens)} ток
+                              факт: {fmtTime(e.fact.hours)} · {fmtTokens(e.fact.tokens)} ток
                               {` · ≈${fmtUsd(e.fact.costUsd)}`}
                             </span>
                           )}

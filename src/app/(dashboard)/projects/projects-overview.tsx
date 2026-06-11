@@ -1,6 +1,7 @@
 "use client";
 
 import { Pencil } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -58,6 +59,15 @@ export function fmtUsd(n: number): string {
   return `$${n.toLocaleString("ru-RU", { maximumFractionDigits: 0 })}`;
 }
 
+/** Фактическое время в формате «00 ч 50 мин» (решение управленца, 2026-06-11). */
+export function fmtTime(hours: number): string {
+  if (!Number.isFinite(hours)) return "—"; // страховка от NaN/Infinity (ревью эпохи 5)
+  const total = Math.max(0, Math.round(hours * 60));
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  return `${String(h).padStart(2, "0")} ч ${String(m).padStart(2, "0")} мин`;
+}
+
 type Filter = "active" | "completed" | "all";
 
 function plural(n: number, one: string, few: string, many: string): string {
@@ -73,12 +83,15 @@ export function ProjectsOverview({
   canEdit,
   canSeeCosts,
   todayIso,
+  unallocated,
 }: {
   projects: ProjectVM[];
   canEdit: boolean;
   canSeeCosts: boolean;
   todayIso: string;
+  unallocated: { hours: number; tokens: number; costUsd: number } | null;
 }) {
+  const router = useRouter();
   const [filter, setFilter] = useState<Filter>("active");
   const [editing, setEditing] = useState<ProjectVM | null>(null);
   const [text, setText] = useState("");
@@ -114,7 +127,11 @@ export function ProjectsOverview({
         {visible.map((p) => {
           const percent = pct(p);
           return (
-            <Card key={p.id} className="gap-3 py-4">
+            <Card
+              key={p.id}
+              className="cursor-pointer gap-3 py-4 transition-shadow hover:shadow-md"
+              onClick={() => router.push(`/projects/${p.slug}`)}
+            >
               <CardHeader className="px-4">
                 <div className="flex items-start justify-between gap-2">
                   <CardTitle className="text-base leading-snug">{p.name}</CardTitle>
@@ -123,7 +140,8 @@ export function ProjectsOverview({
                       size="sm"
                       variant="ghost"
                       className="-mr-1 -mt-1 shrink-0"
-                      onClick={() => {
+                      onClick={(ev) => {
+                        ev.stopPropagation(); // карточка кликабельна → drill-down
                         setEditing(p);
                         setText(p.description ?? "");
                         setError(undefined);
@@ -168,7 +186,7 @@ export function ProjectsOverview({
                 )}
                 {canSeeCosts && p.fact && (
                   <span className="text-xs tabular-nums text-muted-foreground">
-                    факт: {p.fact.hours.toFixed(1)} ч · {fmtTokens(p.fact.tokens)} ток ·{" "}
+                    факт: {fmtTime(p.fact.hours)} · {fmtTokens(p.fact.tokens)} ток ·{" "}
                     ≈{fmtUsd(p.fact.costUsd)}
                   </span>
                 )}
@@ -197,6 +215,15 @@ export function ProjectsOverview({
               dimCompleted={filter === "all"}
               todayIso={todayIso}
             />
+            {canSeeCosts &&
+              unallocated &&
+              (unallocated.tokens > 0 || unallocated.hours > 0 || unallocated.costUsd > 0) && (
+              <p className="pl-44 pt-2 text-xs tabular-nums text-muted-foreground">
+                Нераспределённое (затраты без привязки к задачам, весь портфель):{" "}
+                {fmtTime(unallocated.hours)} · {fmtTokens(unallocated.tokens)} ток ·{" "}
+                ≈{fmtUsd(unallocated.costUsd)}
+              </p>
+            )}
           </CardContent>
         </Card>
       )}
