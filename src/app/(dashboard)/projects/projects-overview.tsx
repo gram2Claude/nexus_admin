@@ -163,17 +163,19 @@ export function ProjectsOverview({
             </>
           )}
         </div>
-        {/* дропдаун проектов переехал в шапку к табам статуса (00_06.jpg) */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* дропдаун проектов переехал в шапку к табам статуса (00_06.jpg);
+            ширина блока = правой колонке грида (50% − половина gap-4): левый край
+            кнопки совпадает с левым краем карточки, сама кнопка тянется до табов */}
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-[calc(50%-0.5rem)]">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              {/* w-64 — по ширине бывшей строки поиска (00_06.jpg) */}
-              <Button variant="outline" size="sm" className="w-64 justify-start gap-1.5">
+              <Button variant="outline" size="sm" className="min-w-0 flex-1 justify-start gap-1.5">
                 <ListFilter className="size-4" />
                 Проекты ({projects.length - hidden.size}/{projects.length})
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-64">
+            {/* меню ровно по ширине кнопки — края совпадают с колонкой карточек */}
+            <DropdownMenuContent align="start" className="w-(--radix-dropdown-menu-trigger-width)">
               <DropdownMenuLabel>Показывать проекты</DropdownMenuLabel>
               <div
                 className="relative px-1 pb-1"
