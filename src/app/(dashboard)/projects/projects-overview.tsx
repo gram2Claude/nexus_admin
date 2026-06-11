@@ -109,7 +109,7 @@ export function ProjectsOverview({
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("active");
   const [ganttLevel, setGanttLevel] = useState<GanttLevel>(1);
-  // фильтр-панель (фидбек управленца): поиск по подстроке + чекбоксы проектов
+  // фильтр проектов (00_06.jpg): поиск живёт внутри дропдауна и фильтрует список чекбоксов
   const [query, setQuery] = useState("");
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   const toggleProject = (id: string) =>
@@ -125,17 +125,13 @@ export function ProjectsOverview({
   const [pending, startTransition] = useTransition();
 
   const q = query.trim().toLowerCase();
+  // поиск сужает только список в дропдауне; карточки управляются чекбоксами и табом статуса
+  const dropdownProjects = projects.filter((p) => !q || p.name.toLowerCase().includes(q));
   const visible = projects
     .filter((p) =>
       filter === "all" ? true : p.status === (filter === "active" ? "active" : "completed")
     )
-    .filter((p) => !hidden.has(p.id))
-    .filter(
-      (p) =>
-        !q ||
-        p.name.toLowerCase().includes(q) ||
-        (p.description ?? "").toLowerCase().includes(q)
-    );
+    .filter((p) => !hidden.has(p.id));
   // на Ганте в режиме «все» завершённые приглушаются; в «завершённые» — показываются как есть
   const ganttProjects = visible.filter((p) => p.startDate && p.endDate);
   // итог портфеля: все проекты + нераспределённый бакет (фидбек управленца)
@@ -167,61 +163,67 @@ export function ProjectsOverview({
             </>
           )}
         </div>
-        <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
-          <TabsList>
-            <TabsTrigger value="active">Активные</TabsTrigger>
-            <TabsTrigger value="completed">Завершённые</TabsTrigger>
-            <TabsTrigger value="all">Все</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
-
-      {/* фильтр-панель: поиск + чекбоксы проектов (фидбек управленца) */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Поиск проекта…"
-            className="w-64 pl-8"
-          />
-        </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <ListFilter className="size-4" />
-              Проекты ({projects.length - hidden.size}/{projects.length})
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-72">
-            <DropdownMenuLabel>Показывать проекты</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {projects.map((p) => (
-              <DropdownMenuCheckboxItem
-                key={p.id}
-                checked={!hidden.has(p.id)}
-                onCheckedChange={() => toggleProject(p.id)}
-                onSelect={(e) => e.preventDefault()} // меню не закрываем — удобно отмечать несколько
+        {/* дропдаун проектов переехал в шапку к табам статуса (00_06.jpg) */}
+        <div className="flex flex-wrap items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              {/* w-64 — по ширине бывшей строки поиска (00_06.jpg) */}
+              <Button variant="outline" size="sm" className="w-64 justify-start gap-1.5">
+                <ListFilter className="size-4" />
+                Проекты ({projects.length - hidden.size}/{projects.length})
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-64">
+              <DropdownMenuLabel>Показывать проекты</DropdownMenuLabel>
+              <div
+                className="relative px-1 pb-1"
+                // набор текста не должен дёргать typeahead-навигацию меню; Escape пропускаем — закрывает меню
+                onKeyDown={(e) => {
+                  if (e.key !== "Escape") e.stopPropagation();
+                }}
               >
-                {/* truncate на span, не на пункте: иначе текст заезжал под галочку (00_05.jpg) */}
-                <span className="min-w-0 truncate">{p.name}</span>
+                <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Поиск проекта…"
+                  className="h-8 pl-8"
+                />
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuCheckboxItem
+                checked={hidden.size === 0}
+                onCheckedChange={() =>
+                  setHidden(hidden.size === 0 ? new Set(projects.map((p) => p.id)) : new Set())
+                }
+                onSelect={(e) => e.preventDefault()}
+              >
+                Выбрать все
               </DropdownMenuCheckboxItem>
-            ))}
-            {hidden.size > 0 && (
-              <>
-                <DropdownMenuSeparator />
+              {dropdownProjects.map((p) => (
                 <DropdownMenuCheckboxItem
-                  checked={false}
-                  onCheckedChange={() => setHidden(new Set())}
-                  onSelect={(e) => e.preventDefault()}
+                  key={p.id}
+                  checked={!hidden.has(p.id)}
+                  onCheckedChange={() => toggleProject(p.id)}
+                  onSelect={(e) => e.preventDefault()} // меню не закрываем — удобно отмечать несколько
                 >
-                  Показать все
+                  {/* truncate на span, не на пункте: иначе текст заезжал под галочку (00_05.jpg) */}
+                  <span className="min-w-0 truncate">{p.name}</span>
                 </DropdownMenuCheckboxItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+              ))}
+              {dropdownProjects.length === 0 && (
+                <p className="px-2 py-1.5 text-sm text-muted-foreground">Ничего не найдено</p>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
+            <TabsList>
+              <TabsTrigger value="active">Активные</TabsTrigger>
+              <TabsTrigger value="completed">Завершённые</TabsTrigger>
+              <TabsTrigger value="all">Все</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
