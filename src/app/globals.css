@@ -95,6 +95,39 @@
   --gantt-fill: #6366f1;
 }
 
+/* Тёмная тема «Dark indigo» — по цветовой системе управленца (2026-06-11):
+   primary-рампа #6366F1, поверхности secondary/tertiary (#020617/#0F172A),
+   текст #F1F5F9/#94A3B8. Для сравнения на /styleguide (скоуп-класс).
+   Отступления от «Usage» (см. спеку): Background взят тёмный #020617 (не индиго),
+   Border — primary-900 #222352 (сплошной индиго-бордер слишком громкий),
+   индиго оставлен кнопкам/CTA/фокусу/заливке Ганта. */
+.theme-dark-indigo {
+  --background: #020617;
+  --foreground: #f1f5f9;
+  --card: #0f172a;
+  --card-foreground: #f1f5f9;
+  --popover: #0f172a;
+  --popover-foreground: #f1f5f9;
+  --primary: #6366f1;
+  --primary-foreground: #ffffff;
+  --secondary: #1e293b;
+  --secondary-foreground: #f1f5f9;
+  --muted: #141430;
+  --muted-foreground: #94a3b8;
+  --accent: #222352;
+  --accent-foreground: #b4b6f8;
+  --destructive: #ef4444;
+  --border: #222352;
+  --input: #33357d;
+  --ring: #6366f1;
+  --cta: #6366f1;
+  --gantt-fill: #6366f1;
+  --status-done: #22c55e;
+  --status-wip: #8f91f5;
+  --status-todo: #64748b;
+  --status-overdue: #ef4444;
+}
+
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);

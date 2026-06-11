@@ -30,6 +30,74 @@ const statuses = [
   { name: "Просрочено", cls: "bg-[var(--status-overdue)]" },
 ];
 
+function ThemePreview({
+  label,
+  note,
+  swatches: themeSwatches,
+}: {
+  label: string;
+  note: string;
+  swatches: { hex: string; name: string }[];
+}) {
+  return (
+    <div className="flex flex-col gap-3 rounded-xl border bg-background p-4 text-foreground">
+      <div>
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {label}
+        </span>
+        <p className="text-xs text-muted-foreground">{note}</p>
+      </div>
+      <div className="flex flex-col gap-3 rounded-lg border bg-card p-4 text-card-foreground shadow-sm">
+        <div>
+          <div className="text-lg font-semibold">Проект nexus_admin</div>
+          <div className="text-sm text-muted-foreground">Эпоха 4 · обзор и Гант</div>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="h-2 w-40 overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full"
+              style={{ width: "60%", background: "var(--gantt-fill)" }}
+            />
+          </div>
+          <span className="text-sm font-medium tabular-nums">60%</span>
+        </div>
+        <div className="text-xs tabular-nums text-muted-foreground">
+          106.75/176.5 ч · 18.2M ток · ≈$4 120
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {statuses.map((s) => (
+            <Badge key={s.name} variant="outline" className="gap-1.5">
+              <span className={`size-2 rounded-full ${s.cls}`} />
+              {s.name}
+            </Badge>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm">Открыть проект</Button>
+          <Button size="sm" variant="secondary">
+            Вторичная
+          </Button>
+          <Button size="sm" variant="outline">
+            Контурная
+          </Button>
+        </div>
+      </div>
+      <div className="grid grid-cols-4 gap-2">
+        {themeSwatches.map((s) => (
+          <div key={s.name} className="flex flex-col gap-1">
+            <div className="h-8 rounded-md border" style={{ background: s.hex }} />
+            <span className="text-[10px] leading-tight text-muted-foreground">
+              {s.name}
+              <br />
+              {s.hex}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default async function StyleguidePage() {
   const session = await auth();
   if (!session?.user || !can.seeStyleguide(session.user.role)) redirect("/projects");
@@ -60,6 +128,41 @@ export default async function StyleguidePage() {
               <span className="text-xs text-muted-foreground">{s.hex}</span>
             </div>
           ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Сравнение тем: светлая (текущая) vs Dark indigo</CardTitle>
+          <CardDescription>
+            Справа — тёмная тема по цветовой системе управленца (рампа индиго #6366F1,
+            поверхности #020617/#0F172A, текст #F1F5F9/#94A3B8). Одинаковая карточка
+            проекта в обеих темах.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-6 lg:grid-cols-2">
+          <ThemePreview
+            label="Светлая (согласована, действует)"
+            note="Slate-нейтрали, тёмные кнопки, индиго — акцент."
+            swatches={[
+              { hex: "#F8FAFC", name: "фон" },
+              { hex: "#FFFFFF", name: "поверхность" },
+              { hex: "#0F172A", name: "текст/кнопки" },
+              { hex: "#6366F1", name: "CTA/прогресс" },
+            ]}
+          />
+          <div className="theme-dark-indigo contents">
+            <ThemePreview
+              label="Dark indigo (новый вариант)"
+              note="Тёмные поверхности, индиго-кнопки, светлый текст."
+              swatches={[
+                { hex: "#020617", name: "фон" },
+                { hex: "#0F172A", name: "поверхность" },
+                { hex: "#F1F5F9", name: "текст" },
+                { hex: "#6366F1", name: "primary/CTA" },
+              ]}
+            />
+          </div>
         </CardContent>
       </Card>
 
