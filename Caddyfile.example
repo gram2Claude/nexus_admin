@@ -1,0 +1,8 @@
+# Скопировать в Caddyfile и подставить адрес.
+# Для VPS без домена: 1-2-3-4.sslip.io (IP через дефисы) — Caddy выпустит Let's Encrypt сам.
+# Access-log намеренно НЕ включён: в query /set-password живут одноразовые
+# инвайт-токены (решение ревью 2.2 — не логировать).
+
+1-2-3-4.sslip.io {
+	reverse_proxy nexus-admin:3000
+}

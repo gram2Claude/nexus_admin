@@ -1,0 +1,29 @@
+# Деплой nexus_admin на VPS (NEXADM-30/31).
+# HTTPS с первого дня — требование ревью 2.1 (30-дневный JWT-cookie без TLS перехватывается).
+# Перед запуском: создать .env.production (см. .env.production.example) и Caddyfile
+# с адресом вида <IP с дефисами>.sslip.io (даёт валидный TLS-сертификат без домена).
+services:
+  nexus-admin:
+    build: .
+    restart: unless-stopped
+    # наружу не торчит: только через Caddy
+    expose:
+      - "3000"
+    env_file: .env.production
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - nexus-admin
+
+volumes:
+  caddy_data:
+  caddy_config:
