@@ -1,7 +1,8 @@
 "use client";
 
-import { LogOut, Moon, RefreshCw, Sun } from "lucide-react";
+import { LogOut, Moon, RefreshCw, Sun, UserRound } from "lucide-react";
 import { useTheme } from "next-themes";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { logout } from "@/app/(dashboard)/actions";
@@ -29,6 +30,7 @@ const titles: Record<string, string> = {
   "/knowledge": "База знаний",
   "/sales": "Отдел продаж",
   "/users": "Пользователи",
+  "/profile": "Профиль",
   "/styleguide": "Styleguide",
 };
 
@@ -97,6 +99,12 @@ export function AppHeader({
               </span>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/profile">
+                <UserRound className="size-4" />
+                Профиль
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuItem
               onSelect={(e) => {
                 e.preventDefault(); // меню не закрываем — удобно щёлкать туда-обратно
