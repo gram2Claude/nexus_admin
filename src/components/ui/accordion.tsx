@@ -68,7 +68,10 @@ function AccordionContent({
     >
       <div
         className={cn(
-          "h-(--radix-accordion-content-height) pt-0 pb-2.5 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground [&_p:not(:last-child)]:mb-4",
+          // h-(--radix-accordion-content-height) убран: переменная замеряется только при
+          // открытии своего уровня — вложенный аккордеон при сворачивании оставлял
+          // пустую область (фидбек управленца, 00_02.jpg). Анимации на Content работают.
+          "pt-0 pb-2.5 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground [&_p:not(:last-child)]:mb-4",
           className
         )}
       >
