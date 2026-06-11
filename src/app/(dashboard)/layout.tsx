@@ -32,11 +32,19 @@ export default async function DashboardLayout({
   if (!session?.user) redirect("/login"); // дублирует proxy — защита в глубину
 
   const role = session.user.role as Role;
+  // имя/почта из БД, не из JWT: после переименования в профиле шапка обновляется
+  // сразу, а не через 10-минутную ревалидацию токена (эпоха 7)
+  const [{ rows: userRows }, freshness] = await Promise.all([
+    db
+      .query("SELECT name, email FROM nexus_admin.users WHERE id = $1", [session.user.id])
+      .catch(() => ({ rows: [] })), // фолбэк на JWT ниже — сбой не роняет кабинет
+    getFreshness(),
+  ]);
   const user = {
-    name: session.user.name ?? session.user.email ?? "—",
+    name: userRows[0]?.name ?? session.user.name ?? session.user.email ?? "—",
+    email: userRows[0]?.email ?? session.user.email ?? "—",
     role,
   };
-  const freshness = await getFreshness();
 
   return (
     <TooltipProvider>

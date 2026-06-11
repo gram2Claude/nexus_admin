@@ -103,6 +103,14 @@ export function ProjectsOverview({
   );
   // на Ганте в режиме «все» завершённые приглушаются; в «завершённые» — показываются как есть
   const ganttProjects = visible.filter((p) => p.startDate && p.endDate);
+  // итог портфеля: все проекты + нераспределённый бакет (фидбек управленца)
+  const totals = projects.reduce(
+    (a, p) => ({
+      tokens: a.tokens + (p.fact?.tokens ?? 0),
+      costUsd: a.costUsd + (p.fact?.costUsd ?? 0),
+    }),
+    { tokens: unallocated?.tokens ?? 0, costUsd: unallocated?.costUsd ?? 0 }
+  );
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
@@ -113,6 +121,16 @@ export function ProjectsOverview({
             План-факт портфеля: {projects.length}{" "}
             {plural(projects.length, "проект", "проекта", "проектов")} в реестре
           </p>
+          {canSeeCosts && totals.tokens > 0 && (
+            <>
+              <p className="text-sm tabular-nums text-muted-foreground">
+                Потрачено токенов: {fmtTokens(totals.tokens)}
+              </p>
+              <p className="text-sm tabular-nums text-muted-foreground">
+                AI стоимость usd: ≈{fmtUsd(totals.costUsd)}
+              </p>
+            </>
+          )}
         </div>
         <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
           <TabsList>
@@ -215,15 +233,8 @@ export function ProjectsOverview({
               dimCompleted={filter === "all"}
               todayIso={todayIso}
             />
-            {canSeeCosts &&
-              unallocated &&
-              (unallocated.tokens > 0 || unallocated.hours > 0 || unallocated.costUsd > 0) && (
-              <p className="pl-44 pt-2 text-xs tabular-nums text-muted-foreground">
-                Нераспределённое (затраты без привязки к задачам, весь портфель):{" "}
-                {fmtTime(unallocated.hours)} · {fmtTokens(unallocated.tokens)} ток ·{" "}
-                ≈{fmtUsd(unallocated.costUsd)}
-              </p>
-            )}
+            {/* строка «нераспределённое» убрана (фидбек управленца):
+                бакет уже входит в итоги портфеля под заголовком */}
           </CardContent>
         </Card>
       )}

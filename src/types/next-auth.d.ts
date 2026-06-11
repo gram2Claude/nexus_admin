@@ -10,6 +10,8 @@ declare module "next-auth" {
   }
   interface User {
     role: Role;
+    /** ts пароля на момент входа (инвалидация сессий при смене, ревью эпохи 7) */
+    pwt?: number;
   }
 }
 
@@ -19,5 +21,7 @@ declare module "next-auth/jwt" {
     role?: Role;
     /** ts последней перепроверки роли/статуса из БД (ревью 2.1) */
     chk?: number;
+    /** ts пароля на момент входа; в БД новее → сессия гаснет (ревью эпохи 7) */
+    pwt?: number;
   }
 }

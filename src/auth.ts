@@ -13,27 +13,36 @@ const DUMMY_HASH = bcrypt.hashSync("nexus-admin-timing-equalizer", 12);
 
 // Перепроверка роли/статуса из БД не чаще, чем раз в N мс (ревью 2.1: роль и
 // status='disabled' были заморожены в JWT на 30 дней).
-const REVALIDATE_MS = 10 * 60_000;
+// Env-override — только для смоук-тестов инвалидации сессий (ревью эпохи 7).
+const REVALIDATE_MS = Number(process.env.AUTH_REVALIDATE_MS ?? 10 * 60_000);
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
   ...authConfig,
   callbacks: {
     ...authConfig.callbacks,
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.uid = user.id;
         token.role = user.role;
+        token.pwt = user.pwt ?? 0;
         token.chk = Date.now();
         return token;
       }
       const chk = typeof token.chk === "number" ? token.chk : 0;
-      if (token.uid && Date.now() - chk > REVALIDATE_MS) {
+      // trigger==='update' — после смены пароля инициатором (unstable_update):
+      // его токен получает свежий pwt и не гаснет на следующей ревалидации
+      if (token.uid && (trigger === "update" || Date.now() - chk > REVALIDATE_MS)) {
         const { rows } = await db.query(
-          "SELECT role, status FROM nexus_admin.users WHERE id = $1",
+          "SELECT role, status, pw_changed_at FROM nexus_admin.users WHERE id = $1",
           [token.uid]
         );
         const u = rows[0];
         if (!u || u.status !== "active") return null; // disabled/удалён → сессия гаснет
+        // пароль сменили после входа этой сессии → cookie невалиден (ревью эпохи 7)
+        const pwDb = u.pw_changed_at ? new Date(u.pw_changed_at).getTime() : 0;
+        const pwTok = typeof token.pwt === "number" ? token.pwt : 0;
+        if (trigger !== "update" && pwDb > pwTok) return null;
+        token.pwt = pwDb;
         token.role = u.role as Role;
         token.chk = Date.now();
       }
@@ -57,7 +66,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         const { rows } = await db.query(
-          `SELECT id, email, name, role, password_hash, status
+          `SELECT id, email, name, role, password_hash, status, pw_changed_at
            FROM nexus_admin.users WHERE email = $1`,
           [email]
         );
@@ -75,7 +84,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         resetFails(email);
-        return { id: u.id, email: u.email, name: u.name, role: u.role };
+        return {
+          id: u.id,
+          email: u.email,
+          name: u.name,
+          role: u.role,
+          pwt: u.pw_changed_at ? new Date(u.pw_changed_at).getTime() : 0,
+        };
       },
     }),
   ],

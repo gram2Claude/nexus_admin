@@ -1,7 +1,8 @@
 "use client";
 
-import { LogOut, Moon, RefreshCw, Sun } from "lucide-react";
+import { LogOut, Moon, RefreshCw, Sun, UserRound } from "lucide-react";
 import { useTheme } from "next-themes";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { logout } from "@/app/(dashboard)/actions";
@@ -29,6 +30,7 @@ const titles: Record<string, string> = {
   "/knowledge": "База знаний",
   "/sales": "Отдел продаж",
   "/users": "Пользователи",
+  "/profile": "Профиль",
   "/styleguide": "Styleguide",
 };
 
@@ -43,7 +45,7 @@ export function AppHeader({
   user,
   freshness,
 }: {
-  user: { name: string; role: string };
+  user: { name: string; email: string; role: string };
   freshness: { label: string; stale: boolean };
 }) {
   const pathname = usePathname();
@@ -89,8 +91,20 @@ export function AppHeader({
             </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel className="truncate">{user.name}</DropdownMenuLabel>
+            <DropdownMenuLabel className="grid leading-tight">
+              <span className="truncate">{user.name}</span>
+              {/* почта под именем — фидбек управленца (00_04.jpg) */}
+              <span className="truncate text-xs font-normal text-muted-foreground">
+                {user.email}
+              </span>
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/profile">
+                <UserRound className="size-4" />
+                Профиль
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuItem
               onSelect={(e) => {
                 e.preventDefault(); // меню не закрываем — удобно щёлкать туда-обратно

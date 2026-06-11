@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import {
   Tooltip,
   TooltipContent,
@@ -127,9 +129,13 @@ export function GanttChart({
           const dim = dimCompleted && p.status === "completed";
           return (
             <div key={p.id} className={`flex items-center ${dim ? "opacity-50" : ""}`}>
-              {/* название в 2 строки: часть до « — » и часть после (фидбек управленца) */}
-              <div className="w-44 shrink-0 pr-3">
-                <div className="truncate text-sm font-medium">
+              {/* название в 2 строки: до « — » и после; клик — drill-down проекта
+                  (фидбек управленца) */}
+              <Link
+                href={`/projects/${p.slug}`}
+                className="group w-44 shrink-0 pr-3"
+              >
+                <div className="truncate text-sm font-medium group-hover:underline">
                   {p.name.split(" — ")[0]}
                 </div>
                 <div className="truncate text-xs text-muted-foreground">
@@ -137,7 +143,7 @@ export function GanttChart({
                     ? p.name.slice(p.name.indexOf(" — ") + 3)
                     : (p.description ?? "")}
                 </div>
-              </div>
+              </Link>
               <div className="relative h-12 flex-1">
                 {/* полоса планового периода */}
                 <div
