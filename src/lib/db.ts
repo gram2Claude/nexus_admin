@@ -40,7 +40,9 @@ function getPool(): Pool {
 }
 
 export const db = {
-  query<T extends QueryResultRow = QueryResultRow>(
+  // дефолт any — как у pg.Pool.query: нетипизированные вызовы остаются совместимыми
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  query<T extends QueryResultRow = any>(
     text: string,
     params?: unknown[]
   ): Promise<QueryResult<T>> {
