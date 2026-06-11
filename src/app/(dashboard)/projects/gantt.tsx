@@ -129,6 +129,9 @@ export function GanttChart({
             <div key={p.id} className={`flex items-center ${dim ? "opacity-50" : ""}`}>
               <div className="w-44 shrink-0 pr-3">
                 <div className="truncate text-sm font-medium">{p.name}</div>
+                {p.description && (
+                  <div className="truncate text-xs text-muted-foreground">{p.description}</div>
+                )}
               </div>
               <div className="relative h-12 flex-1">
                 {/* полоса планового периода */}
