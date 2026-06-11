@@ -839,7 +839,9 @@
               "pessimistic_h": 4,
               "ai_estimate_h": 1,
               "estimate_h": 4.25,
-              "status": "in_progress"
+              "status": "done",
+              "done_at": "2026-06-11",
+              "merge_sha": "0c43332536b53677e38f01d167f9f845695ceab7"
             },
             {
               "id": "t35",
@@ -853,7 +855,9 @@
               "pessimistic_h": 1.5,
               "ai_estimate_h": 0.5,
               "estimate_h": 1.75,
-              "status": "in_progress"
+              "status": "done",
+              "done_at": "2026-06-11",
+              "merge_sha": "0c43332536b53677e38f01d167f9f845695ceab7"
             }
           ]
         }
