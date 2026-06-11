@@ -632,7 +632,8 @@
               "plane_identifier": "NEXADM-25",
               "plane_linked_cycle": true,
               "plane_linked_module": true,
-              "done_at": "2026-06-11"
+              "done_at": "2026-06-11",
+              "merge_sha": "9f4010a952664af133e1df20822c4fc9989aa019"
             },
             {
               "id": "t26",
@@ -644,11 +645,13 @@
               "estimate_h": 10,
               "ai_estimate_h": 2.25,
               "task_type": "code",
-              "status": "in_progress",
+              "status": "done",
               "plane_issue_id": "3525a05a-79c1-41d5-b145-304e371209c5",
               "plane_identifier": "NEXADM-26",
               "plane_linked_cycle": true,
-              "plane_linked_module": true
+              "plane_linked_module": true,
+              "done_at": "2026-06-11",
+              "merge_sha": "9f4010a952664af133e1df20822c4fc9989aa019"
             }
           ],
           "plane_cycle_id": "a12172e4-3c17-4abf-b52d-836558973e0c"
@@ -673,11 +676,13 @@
               "estimate_h": 5,
               "ai_estimate_h": 1,
               "task_type": "code",
-              "status": "in_progress",
+              "status": "done",
               "plane_issue_id": "1946bcea-d8db-490f-8663-186fb017fbe0",
               "plane_identifier": "NEXADM-27",
               "plane_linked_cycle": true,
-              "plane_linked_module": true
+              "plane_linked_module": true,
+              "done_at": "2026-06-11",
+              "merge_sha": "9f4010a952664af133e1df20822c4fc9989aa019"
             },
             {
               "id": "t28",
@@ -689,11 +694,13 @@
               "estimate_h": 5.75,
               "ai_estimate_h": 1,
               "task_type": "code",
-              "status": "in_progress",
+              "status": "done",
               "plane_issue_id": "5e8bd026-67be-4409-a029-a3507913bd53",
               "plane_identifier": "NEXADM-28",
               "plane_linked_cycle": true,
-              "plane_linked_module": true
+              "plane_linked_module": true,
+              "done_at": "2026-06-11",
+              "merge_sha": "9f4010a952664af133e1df20822c4fc9989aa019"
             },
             {
               "id": "t29",
@@ -705,11 +712,13 @@
               "estimate_h": 4,
               "ai_estimate_h": 0.75,
               "task_type": "qa",
-              "status": "in_progress",
+              "status": "done",
               "plane_issue_id": "77700926-0eb6-429b-92df-c55be790b90b",
               "plane_identifier": "NEXADM-29",
               "plane_linked_cycle": true,
-              "plane_linked_module": true
+              "plane_linked_module": true,
+              "done_at": "2026-06-11",
+              "merge_sha": "9f4010a952664af133e1df20822c4fc9989aa019"
             }
           ],
           "plane_cycle_id": "ac5c26d8-24cd-4cc9-8fa1-b6194a7f6f48"
