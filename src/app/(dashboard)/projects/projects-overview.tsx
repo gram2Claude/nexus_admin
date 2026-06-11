@@ -60,14 +60,24 @@ export function fmtUsd(n: number): string {
 
 type Filter = "active" | "completed" | "all";
 
+function plural(n: number, one: string, few: string, many: string): string {
+  const m10 = n % 10;
+  const m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return one;
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+  return many;
+}
+
 export function ProjectsOverview({
   projects,
   canEdit,
   canSeeCosts,
+  todayIso,
 }: {
   projects: ProjectVM[];
   canEdit: boolean;
   canSeeCosts: boolean;
+  todayIso: string;
 }) {
   const [filter, setFilter] = useState<Filter>("active");
   const [editing, setEditing] = useState<ProjectVM | null>(null);
@@ -87,7 +97,8 @@ export function ProjectsOverview({
         <div>
           <h1 className="text-2xl font-semibold">Проекты</h1>
           <p className="text-sm text-muted-foreground">
-            План-факт портфеля: {projects.length} проектов в реестре
+            План-факт портфеля: {projects.length}{" "}
+            {plural(projects.length, "проект", "проекта", "проектов")} в реестре
           </p>
         </div>
         <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
@@ -180,7 +191,12 @@ export function ProjectsOverview({
             </CardTitle>
           </CardHeader>
           <CardContent className="px-4">
-            <GanttChart projects={ganttProjects} canSeeCosts={canSeeCosts} dimCompleted={filter === "all"} />
+            <GanttChart
+              projects={ganttProjects}
+              canSeeCosts={canSeeCosts}
+              dimCompleted={filter === "all"}
+              todayIso={todayIso}
+            />
           </CardContent>
         </Card>
       )}

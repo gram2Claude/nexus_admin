@@ -32,8 +32,20 @@ type EpochRow = {
 export default async function ProjectsPage() {
   const session = await auth();
   const role = session?.user?.role ?? "client";
+  const canSeeCosts = can.seeCosts(role);
 
-  // Employee увидит только свои проекты с membership (NEXADM-28, эпоха 5); до тех пор — все
+  // Employee увидит только свои проекты с membership (NEXADM-28, эпоха 5); до тех пор — все.
+  // Client по матрице прав не видит проекты вообще (ревью эпохи 4).
+  if (role === "client") {
+    return (
+      <p className="py-12 text-center text-sm text-muted-foreground">
+        Доступ к проектам для роли Client настраивается отдельно.
+      </p>
+    );
+  }
+
+  // Факт-роллапы НЕ запрашиваются без права seeCosts: иначе стоимости сериализуются
+  // в client-payload и матрица прав обходится через исходник страницы (ревью эпохи 4, P1)
   const [{ rows: projects }, { rows: epochs }, epochFacts, projectFacts] = await Promise.all([
     db.query<ProjectRow>(
       `SELECT id, slug, name, description, status, done_h::float8 AS done_h,
@@ -49,8 +61,8 @@ export default async function ProjectsPage() {
        WHERE NOT e.archived AND NOT p.archived
        ORDER BY p.slug, e.ord`
     ),
-    epochFactRollupAll(),
-    projectFactRollupAll(),
+    canSeeCosts ? epochFactRollupAll() : Promise.resolve([]),
+    canSeeCosts ? projectFactRollupAll() : Promise.resolve([]),
   ]);
 
   const epochFactMap = new Map(
@@ -97,7 +109,8 @@ export default async function ProjectsPage() {
     <ProjectsOverview
       projects={vms}
       canEdit={can.editProjectMeta(role)}
-      canSeeCosts={can.seeCosts(role)}
+      canSeeCosts={canSeeCosts}
+      todayIso={new Date().toISOString().slice(0, 10)}
     />
   );
 }

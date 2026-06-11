@@ -104,6 +104,7 @@ export async function epochFactRollupAll(): Promise<EpochFact[]> {
      JOIN nexus_admin.projects p ON p.id = t.project_id
      JOIN nexus_admin.v_task_fact f
        ON f.readable_id = t.readable_id AND f.project_slug = p.slug
+     WHERE NOT p.archived AND NOT e.archived
      GROUP BY p.slug, e.ext_id`
   );
   return rows;

@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-
 import {
   Tooltip,
   TooltipContent,
@@ -16,35 +14,32 @@ const MONTHS = [
   "июл", "авг", "сен", "окт", "ноя", "дек",
 ];
 
-function fmtD(iso: string | null): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
+// Вся датная арифметика — в UTC (ревью эпохи 4: смешение UTC-парсинга 'YYYY-MM-DD'
+// с локальными setDate/getMonth давало сдвиги сетки и hydration mismatch между TZ).
+const utc = (iso: string) => +new Date(`${iso}T00:00:00Z`);
+
+// даты приходят как date::text 'YYYY-MM-DD' — форматируем слайсом, без Date/TZ
+const fmtD = (iso: string | null) => (iso ? `${iso.slice(8, 10)}.${iso.slice(5, 7)}` : "—");
 
 /**
  * Гант портфеля (NEXADM-22/23): горизонталь — календарь, вертикаль — проекты.
  * Полоса = плановый период; градиентная заливка = % выполнения по часам;
- * насечки — границы эпох; hover на сегмент эпохи — тултип с планом и фактом;
- * вертикальная линия — «сегодня». Реализация на позиционированных div'ах
- * (проценты от временного диапазона) — отзывчиво без пересчёта на ресайз.
+ * насечки — границы эпох; hover на сегмент эпохи — тултип с планом (и фактом
+ * для seeCosts); вертикальная линия — «сегодня» (приходит с сервера — без
+ * hydration mismatch). Позиционированные div'ы с % от временного диапазона.
  */
 export function GanttChart({
   projects,
   canSeeCosts,
   dimCompleted,
+  todayIso,
 }: {
   projects: ProjectVM[];
   canSeeCosts: boolean;
   dimCompleted: boolean;
+  todayIso: string;
 }) {
-  // лениво: один раз на маунт (react-hooks/purity запрещает impure-вызовы в рендере)
-  const [today] = useState(() => Date.now());
-
-  const stamps = projects.flatMap((p) => [
-    +new Date(p.startDate!),
-    +new Date(p.endDate!),
-  ]);
+  const stamps = projects.flatMap((p) => [utc(p.startDate!), utc(p.endDate!)]);
   if (!stamps.length) return null;
   const pad = 4 * DAY;
   const d0 = Math.min(...stamps) - pad;
@@ -52,24 +47,29 @@ export function GanttChart({
   const span = d1 - d0;
   const x = (t: number) => Math.max(0, Math.min(100, ((t - d0) / span) * 100));
 
-  // деления: месяцы (подписи) + недели (сетка по понедельникам)
-  const months: { at: number; label: string }[] = [];
+  // деления: месяцы (подписи) + недели (сетка по понедельникам), всё в UTC
+  const months: { ts: number; at: number; label: string }[] = [];
   const mCur = new Date(d0);
-  mCur.setDate(1);
-  mCur.setHours(0, 0, 0, 0);
+  mCur.setUTCDate(1);
+  mCur.setUTCHours(0, 0, 0, 0);
   while (+mCur <= d1) {
     // месяц, начавшийся до диапазона, подписываем у левого края (частичный месяц)
-    months.push({ at: x(Math.max(+mCur, d0)), label: MONTHS[mCur.getMonth()] });
-    mCur.setMonth(mCur.getMonth() + 1);
+    months.push({ ts: +mCur, at: x(Math.max(+mCur, d0)), label: MONTHS[mCur.getUTCMonth()] });
+    mCur.setUTCMonth(mCur.getUTCMonth() + 1);
   }
-  const weeks: number[] = [];
+  // подпись частичного месяца убираем, если до следующей подписи < 4% (наложение)
+  const monthLabels = months.filter(
+    (m, i) => i === months.length - 1 || months[i + 1].at - m.at >= 4
+  );
+  const weeks: { ts: number; at: number }[] = [];
   const wCur = new Date(d0);
-  wCur.setHours(0, 0, 0, 0);
-  while (wCur.getDay() !== 1) wCur.setDate(wCur.getDate() + 1);
+  wCur.setUTCHours(0, 0, 0, 0);
+  while (wCur.getUTCDay() !== 1) wCur.setUTCDate(wCur.getUTCDate() + 1);
   while (+wCur <= d1) {
-    weeks.push(x(+wCur));
-    wCur.setDate(wCur.getDate() + 7);
+    weeks.push({ ts: +wCur, at: x(+wCur) });
+    wCur.setUTCDate(wCur.getUTCDate() + 7);
   }
+  const today = utc(todayIso);
   const todayX = today >= d0 && today <= d1 ? x(today) : null;
 
   return (
@@ -78,9 +78,9 @@ export function GanttChart({
       <div className="flex">
         <div className="w-44 shrink-0" />
         <div className="relative h-6 flex-1">
-          {months.map((m) => (
+          {monthLabels.map((m) => (
             <span
-              key={m.at}
+              key={m.ts}
               className="absolute top-0 text-xs text-muted-foreground"
               style={{ left: `${m.at}%` }}
             >
@@ -97,9 +97,9 @@ export function GanttChart({
           <div className="relative h-full">
             {weeks.map((w) => (
               <div
-                key={w}
+                key={w.ts}
                 className="absolute inset-y-0 border-l border-border/60"
-                style={{ left: `${w}%` }}
+                style={{ left: `${w.at}%` }}
               />
             ))}
             {todayX !== null && (
@@ -114,8 +114,8 @@ export function GanttChart({
 
         {projects.map((p) => {
           const percent = pct(p) ?? 0;
-          const bL = x(+new Date(p.startDate!));
-          const bR = x(+new Date(p.endDate!) + DAY); // конец дня включительно
+          const bL = x(utc(p.startDate!));
+          const bR = x(utc(p.endDate!) + DAY); // конец дня включительно
           const dim = dimCompleted && p.status === "completed";
           return (
             <div key={p.id} className={`flex items-center ${dim ? "opacity-50" : ""}`}>
@@ -141,8 +141,8 @@ export function GanttChart({
                 {/* сегменты эпох: насечка + hover-зона с тултипом */}
                 {p.epochs.map((e) => {
                   if (!e.startDate || !e.endDate) return null;
-                  const eL = x(+new Date(e.startDate));
-                  const eR = x(+new Date(e.endDate) + DAY);
+                  const eL = x(utc(e.startDate));
+                  const eR = x(utc(e.endDate) + DAY);
                   const ePct =
                     e.planH && e.planH > 0
                       ? Math.min(100, Math.round((100 * e.doneH) / e.planH))
@@ -165,10 +165,12 @@ export function GanttChart({
                             план: {fmtD(e.startDate)}–{fmtD(e.endDate)} · {e.planH ?? "—"} ч
                             {ePct !== null && ` · ${ePct}%`}
                           </span>
-                          {e.fact && (
+                          {/* вся факт-строка под seeCosts: часы/токены — тоже затраты
+                              по матрице прав (ревью эпохи 4, P1) */}
+                          {canSeeCosts && e.fact && (
                             <span className="text-xs tabular-nums">
                               факт: {e.fact.hours.toFixed(1)} ч · {fmtTokens(e.fact.tokens)} ток
-                              {canSeeCosts && ` · ≈${fmtUsd(e.fact.costUsd)}`}
+                              {` · ≈${fmtUsd(e.fact.costUsd)}`}
                             </span>
                           )}
                         </div>
