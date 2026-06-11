@@ -48,28 +48,30 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Палитра по согласованной спеке спринта 1.1 (референс Logip):
-   фон #F6F7F9, поверхности белые r12, текст #0F172A/#64748B, акцент #16A34A */
+/* Палитра «Shadcn slate+indigo» — финальное решение управленца
+   (спека 1.1, ревизия от 2026-06-10): база ui.shadcn.com (тёмные кнопки,
+   slate-нейтрали #F8FAFC/#F1F5F9/#E2E8F0), подсветки — индиго #C7D2FE,
+   CTA и заливка Ганта — насыщенный индиго #6366F1. */
 :root {
-  --background: #f6f7f9;
+  --background: #f8fafc;
   --foreground: #0f172a;
   --card: #ffffff;
   --card-foreground: #0f172a;
   --popover: #ffffff;
   --popover-foreground: #0f172a;
-  --primary: #16a34a;
-  --primary-foreground: #ffffff;
-  --secondary: #eef1f4;
+  --primary: #0f172a;
+  --primary-foreground: #f8fafc;
+  --secondary: #f1f5f9;
   --secondary-foreground: #0f172a;
-  --muted: #eef1f4;
+  --muted: #f1f5f9;
   --muted-foreground: #64748b;
-  --accent: #f0fdf4;
-  --accent-foreground: #15803d;
+  --accent: #c7d2fe;
+  --accent-foreground: #3730a3;
   --destructive: #dc2626;
   --border: #e2e8f0;
   --input: #e2e8f0;
-  --ring: #16a34a;
-  --chart-1: #16a34a;
+  --ring: #6366f1;
+  --chart-1: #6366f1;
   --chart-2: #3b82f6;
   --chart-3: #f59e0b;
   --chart-4: #8b5cf6;
@@ -77,17 +79,20 @@
   --radius: 0.75rem;
   --sidebar: #ffffff;
   --sidebar-foreground: #0f172a;
-  --sidebar-primary: #16a34a;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f0fdf4;
-  --sidebar-accent-foreground: #15803d;
+  --sidebar-primary: #0f172a;
+  --sidebar-primary-foreground: #f8fafc;
+  --sidebar-accent: #c7d2fe;
+  --sidebar-accent-foreground: #3730a3;
   --sidebar-border: #e2e8f0;
-  --sidebar-ring: #16a34a;
+  --sidebar-ring: #6366f1;
   /* Статусы план-факта (весь кабинет): */
   --status-done: #16a34a;
-  --status-wip: #3b82f6;
+  --status-wip: #6366f1;
   --status-todo: #94a3b8;
   --status-overdue: #dc2626;
+  /* CTA и заливка Ганта: */
+  --cta: #6366f1;
+  --gantt-fill: #6366f1;
 }
 
 .dark {

@@ -1,3 +1,6 @@
+import { redirect } from "next/navigation";
+
+import { auth } from "@/auth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -7,16 +10,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { can } from "@/lib/rbac";
 
 const swatches = [
-  { name: "Фон приложения", cls: "bg-background border", hex: "#F6F7F9" },
+  { name: "Фон приложения", cls: "bg-background border", hex: "#F8FAFC" },
   { name: "Поверхность (card)", cls: "bg-card border", hex: "#FFFFFF" },
+  { name: "Подложки (muted)", cls: "bg-muted border", hex: "#F1F5F9" },
+  { name: "Границы", cls: "bg-border", hex: "#E2E8F0" },
   { name: "Текст основной", cls: "bg-foreground", hex: "#0F172A" },
   { name: "Текст вторичный", cls: "bg-muted-foreground", hex: "#64748B" },
-  { name: "Акцент (primary)", cls: "bg-primary", hex: "#16A34A" },
-  { name: "График: синий", cls: "bg-chart-2", hex: "#3B82F6" },
-  { name: "График: янтарный", cls: "bg-chart-3", hex: "#F59E0B" },
-  { name: "График: фиолетовый", cls: "bg-chart-4", hex: "#8B5CF6" },
+  { name: "Подсветка (accent)", cls: "bg-accent", hex: "#C7D2FE" },
+  { name: "CTA / прогресс", cls: "bg-[var(--cta)]", hex: "#6366F1" },
 ];
 
 const statuses = [
@@ -26,20 +30,27 @@ const statuses = [
   { name: "Просрочено", cls: "bg-[var(--status-overdue)]" },
 ];
 
-export default function StyleguidePage() {
+export default async function StyleguidePage() {
+  const session = await auth();
+  if (!session?.user || !can.seeStyleguide(session.user.role)) redirect("/projects");
+
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <div>
         <h1 className="text-2xl font-semibold">Styleguide</h1>
         <p className="text-muted-foreground">
-          Витрина дизайн-токенов по спеке спринта 1.1 (референс Logip).
+          Дизайн-токены кабинета: палитра «Shadcn slate+indigo» + Geist
+          (решение управленца, спека 1.1, ревизия 2026-06-10).
         </p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Палитра</CardTitle>
-          <CardDescription>Согласованные цвета (спека, п.3)</CardDescription>
+          <CardDescription>
+            База ui.shadcn.com (тёмные кнопки, slate-нейтрали) + индиго: #C7D2FE —
+            подсветки, #6366F1 — CTA и заливка Ганта.
+          </CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {swatches.map((s) => (
@@ -55,7 +66,7 @@ export default function StyleguidePage() {
       <Card>
         <CardHeader>
           <CardTitle>Типографика</CardTitle>
-          <CardDescription>Inter, полная кириллица; цифры — tabular-nums</CardDescription>
+          <CardDescription>Geist, полная кириллица; цифры — tabular-nums</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
           <span className="text-2xl font-semibold">Заголовок страницы — 2xl semibold</span>
@@ -72,12 +83,18 @@ export default function StyleguidePage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Кнопки и статусы</CardTitle>
-          <CardDescription>shadcn-варианты + статусы план-факта</CardDescription>
+          <CardTitle>Кнопки, статусы и прогресс</CardTitle>
+          <CardDescription>shadcn-варианты + семантика план-факта</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center gap-3">
             <Button>Основная</Button>
+            <Button
+              className="border-0 text-white"
+              style={{ background: "var(--cta)" }}
+            >
+              CTA-акцент
+            </Button>
             <Button variant="secondary">Вторичная</Button>
             <Button variant="outline">Контурная</Button>
             <Button variant="ghost">Прозрачная</Button>
@@ -90,6 +107,17 @@ export default function StyleguidePage() {
                 {s.name}
               </Badge>
             ))}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <div className="h-3 w-full max-w-md overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full"
+                style={{ width: "62%", background: "var(--gantt-fill)" }}
+              />
+            </div>
+            <span className="text-xs text-muted-foreground">
+              Образец полосы Ганта: заливка — выполнено (62 %), фон — осталось
+            </span>
           </div>
         </CardContent>
       </Card>

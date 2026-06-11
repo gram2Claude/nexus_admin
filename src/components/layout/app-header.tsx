@@ -1,8 +1,9 @@
 "use client";
 
+import { LogOut, RefreshCw } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { RefreshCw } from "lucide-react";
 
+import { logout } from "@/app/(dashboard)/actions";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Breadcrumb,
@@ -10,6 +11,14 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
 } from "@/components/ui/breadcrumb";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
@@ -22,9 +31,21 @@ const titles: Record<string, string> = {
   "/styleguide": "Styleguide",
 };
 
-export function AppHeader() {
+const roleLabels: Record<string, string> = {
+  owner: "Owner",
+  admin: "Admin",
+  employee: "Employee",
+  client: "Client",
+};
+
+export function AppHeader({
+  user,
+}: {
+  user: { name: string; role: string };
+}) {
   const pathname = usePathname();
   const section = Object.keys(titles).find((p) => pathname.startsWith(p));
+  const initial = (user.name[0] ?? "?").toUpperCase();
 
   return (
     <header className="flex h-14 shrink-0 items-center gap-3 border-b bg-card px-4">
@@ -45,18 +66,29 @@ export function AppHeader() {
           обновлено: —
         </span>
         <Separator orientation="vertical" className="!h-5" />
-        {/* Заглушка пользователя — реальная сессия и роль придут с auth (эпоха 2) */}
-        <div className="flex items-center gap-2">
-          <Avatar className="size-7">
-            <AvatarFallback className="bg-primary/10 text-xs font-medium text-primary">
-              О
-            </AvatarFallback>
-          </Avatar>
-          <div className="hidden leading-tight md:grid">
-            <span className="text-sm font-medium">Олег</span>
-            <span className="text-xs text-muted-foreground">Owner</span>
-          </div>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger className="flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-muted">
+            <Avatar className="size-7">
+              <AvatarFallback className="bg-accent text-xs font-medium text-accent-foreground">
+                {initial}
+              </AvatarFallback>
+            </Avatar>
+            <div className="hidden text-left leading-tight md:grid">
+              <span className="text-sm font-medium">{user.name}</span>
+              <span className="text-xs text-muted-foreground">
+                {roleLabels[user.role] ?? user.role}
+              </span>
+            </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuLabel className="truncate">{user.name}</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={() => logout()}>
+              <LogOut className="size-4" />
+              Выйти
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );
