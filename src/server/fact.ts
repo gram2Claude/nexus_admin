@@ -58,8 +58,11 @@ export async function levelFactRollup(
      JOIN nexus_admin.sprints s ON s.id = t.sprint_id
      JOIN nexus_admin.epochs e ON e.id = s.epoch_id
      JOIN nexus_admin.projects p ON p.id = t.project_id
-     JOIN nexus_admin.v_task_fact f ON f.readable_id = t.readable_id
-     WHERE p.slug = $1 AND NOT t.archived
+     -- project_slug в join: одинаковый readable_id в двух проектах не задваивает (ревью 3.2)
+     JOIN nexus_admin.v_task_fact f
+       ON f.readable_id = t.readable_id AND f.project_slug = p.slug
+     -- архивные задачи НЕ исключаются: их фактические затраты реальны (ревью 3.2)
+     WHERE p.slug = $1
      GROUP BY s.ext_id, e.ext_id`,
     [projectSlug]
   );
@@ -87,7 +90,8 @@ export async function unallocatedModelFacts(): Promise<ModelFact[]> {
             tokens::float8 AS tokens, cache_read::float8 AS cache_read,
             cache_creation::float8 AS cache_creation, cost_usd::float8 AS cost_usd
      FROM nexus_admin.v_task_model_fact
-     WHERE readable_id IS NULL AND (tokens > 0 OR minutes > 0)
+     -- project_slug IS NULL: задачи без identifier не смешиваются с бакетом портфеля (ревью 3.2)
+     WHERE readable_id IS NULL AND project_slug IS NULL AND (tokens > 0 OR minutes > 0)
      ORDER BY cost_usd DESC`
   );
   return rows;

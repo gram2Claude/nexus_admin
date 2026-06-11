@@ -4,7 +4,11 @@ import { join } from "node:path";
 import { Pool } from "pg";
 
 // Приложение ходит ограниченной ролью nexus_admin_app (NEXADM-16): схема кабинета +
-// view факта; public.* недоступен. Fallback на DATABASE_URL — для сред без роли.
+// view факта; public.* недоступен. Тихий fallback на админский DSN запрещён в проде
+// (ревью 3.2: потеря env молча обнуляла бы границу роли).
+if (process.env.NODE_ENV === "production" && !process.env.DATABASE_URL_APP) {
+  throw new Error("DATABASE_URL_APP не задан — в production админский DSN запрещён");
+}
 const url = process.env.DATABASE_URL_APP ?? process.env.DATABASE_URL;
 if (!url) throw new Error("DATABASE_URL_APP / DATABASE_URL не заданы");
 

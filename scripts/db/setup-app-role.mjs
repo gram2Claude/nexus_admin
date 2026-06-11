@@ -10,8 +10,8 @@ if (!password) {
   console.error("Нужен env APP_DB_PASSWORD");
   process.exit(1);
 }
-if (!/^[A-Za-z0-9]{16,}$/.test(password)) {
-  console.error("APP_DB_PASSWORD: минимум 16 символов A-Za-z0-9 (попадает в SQL-литерал)");
+if (!/^[A-Za-z0-9]{24,}$/.test(password)) {
+  console.error("APP_DB_PASSWORD: минимум 24 символа A-Za-z0-9 (попадает в SQL-литерал)");
   process.exit(1);
 }
 
@@ -36,6 +36,8 @@ try {
   await client.query(
     "GRANT UPDATE (description, description_source) ON nexus_admin.projects TO nexus_admin_app"
   );
+  // действует на объекты, создаваемые ТЕКУЩИМ юзером (postgres из DATABASE_URL) —
+  // миграции гоняем только под ним; объекты из Dashboard грантов не получат (ревью 3.2)
   await client.query(
     "ALTER DEFAULT PRIVILEGES IN SCHEMA nexus_admin GRANT SELECT ON TABLES TO nexus_admin_app"
   );
@@ -65,8 +67,13 @@ try {
       await app.query(probe);
       console.error("ДЫРА: разрешено →", probe);
       process.exitCode = 1;
-    } catch {
-      denied++;
+    } catch (e) {
+      // считаем закрытым ТОЛЬКО отказ в правах; FK/констрейнт = false green (ревью 3.2)
+      if (e.code === "42501") denied++;
+      else {
+        console.error(`не privilege-отказ (${e.code}) →`, probe);
+        process.exitCode = 1;
+      }
     }
   }
   console.log(`границы: ${denied}/3 запрещённых операций отклонено`);

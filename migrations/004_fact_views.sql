@@ -27,12 +27,12 @@ LEFT JOIN (
   FROM public.daily_agent_usage GROUP BY task_id
 ) au ON au.task_id = tt.id
 LEFT JOIN LATERAL (
-  -- display_name у сотрудников timechecker бывает пуст — падаем на windows_username
-  SELECT COALESCE(e.display_name, e.windows_username) AS display_name
+  -- display_name бывает NULL или '' — падаем на windows_username (ревью 3.2)
+  SELECT COALESCE(NULLIF(e.display_name, ''), e.windows_username) AS display_name
   FROM public.daily_task_time d
   JOIN public.employee e ON e.id = d.employee_id
   WHERE d.task_id = tt.id
-  GROUP BY COALESCE(e.display_name, e.windows_username)
+  GROUP BY COALESCE(NULLIF(e.display_name, ''), e.windows_username)
   ORDER BY SUM(d.active_minutes) DESC
   LIMIT 1
 ) emp ON true
@@ -50,8 +50,10 @@ WITH day_model AS (
   SELECT
     s.employee_id, s.source,
     ((s.started_at)::timestamptz AT TIME ZONE 'Europe/Moscow')::date AS work_date,
-    COALESCE(NULLIF(s.model, '<synthetic>'), 'unknown') AS model,
-    SUM(s.tokens_in + s.tokens_out + s.cache_read + s.cache_creation)::numeric AS w_tokens
+    -- '' и '<synthetic>' → 'unknown' (ревью 3.2)
+    COALESCE(NULLIF(NULLIF(btrim(s.model), ''), '<synthetic>'), 'unknown') AS model,
+    -- веса — только рабочие токены: кэш-чтения доминируют на порядки и искажали бы доли (ревью 3.2)
+    SUM(s.tokens_in + s.tokens_out)::numeric AS w_tokens
   FROM public.agent_session s
   WHERE s.started_at IS NOT NULL
   GROUP BY 1, 2, 3, 4
@@ -59,19 +61,25 @@ WITH day_model AS (
 day_tot AS (
   SELECT employee_id, source, work_date, SUM(w_tokens) AS tot
   FROM day_model GROUP BY 1, 2, 3
+  HAVING SUM(w_tokens) > 0
 ),
-tok AS ( -- токены/кэш/стоимость: доли внутри (employee, source, день)
+-- LEFT JOIN + fallback-бакет (ревью 3.2, HIGH у обоих ревьюеров): день задачи без
+-- подходящих сессий (сессия через полночь, нулевые веса) НЕ теряется — вся строка
+-- уходит в model='unknown' с долей 1. Сходимость сумм — теперь по построению.
+tok AS (
   SELECT
-    d.task_id, dm.model,
-    SUM(d.tokens         * dm.w_tokens / NULLIF(dt.tot, 0)) AS tokens,
-    SUM(d.cache_read     * dm.w_tokens / NULLIF(dt.tot, 0)) AS cache_read,
-    SUM(d.cache_creation * dm.w_tokens / NULLIF(dt.tot, 0)) AS cache_creation,
-    SUM(d.cost_usd       * dm.w_tokens / NULLIF(dt.tot, 0)) AS cost_usd
+    d.task_id,
+    COALESCE(dm.model, 'unknown') AS model,
+    SUM(d.tokens         * COALESCE(dm.w_tokens / dt.tot, 1)) AS tokens,
+    SUM(d.cache_read     * COALESCE(dm.w_tokens / dt.tot, 1)) AS cache_read,
+    SUM(d.cache_creation * COALESCE(dm.w_tokens / dt.tot, 1)) AS cache_creation,
+    SUM(d.cost_usd       * COALESCE(dm.w_tokens / dt.tot, 1)) AS cost_usd
   FROM public.daily_agent_usage d
-  JOIN day_tot dt ON dt.employee_id = d.employee_id AND dt.source = d.source
-                 AND dt.work_date = (d.work_date)::date
-  JOIN day_model dm ON dm.employee_id = d.employee_id AND dm.source = d.source
-                   AND dm.work_date = (d.work_date)::date
+  LEFT JOIN day_tot dt ON dt.employee_id = d.employee_id AND dt.source = d.source
+                      AND dt.work_date = (d.work_date)::date
+  LEFT JOIN day_model dm ON dm.employee_id = d.employee_id AND dm.source = d.source
+                        AND dm.work_date = (d.work_date)::date
+                        AND dt.tot IS NOT NULL
   GROUP BY 1, 2
 ),
 day_model_all AS ( -- доли моделей дня без source — для минут
@@ -81,16 +89,21 @@ day_model_all AS ( -- доли моделей дня без source — для м
 day_tot_all AS (
   SELECT employee_id, work_date, SUM(w_tokens) AS tot
   FROM day_model_all GROUP BY 1, 2
+  HAVING SUM(w_tokens) > 0
 ),
-tim AS ( -- минуты задачи по моделям
+-- минуты дней без AI-сессий не теряются (ревью 3.2): бакет 'no-agent';
+-- SUM(minutes) по задаче сходится с fact_minutes из v_task_fact по построению
+tim AS (
   SELECT
-    d.task_id, dma.model,
-    SUM(d.active_minutes * dma.w_tokens / NULLIF(dta.tot, 0)) AS minutes
+    d.task_id,
+    COALESCE(dma.model, 'no-agent') AS model,
+    SUM(d.active_minutes * COALESCE(dma.w_tokens / dta.tot, 1)) AS minutes
   FROM public.daily_task_time d
-  JOIN day_tot_all dta ON dta.employee_id = d.employee_id
-                      AND dta.work_date = (d.work_date)::date
-  JOIN day_model_all dma ON dma.employee_id = d.employee_id
-                        AND dma.work_date = (d.work_date)::date
+  LEFT JOIN day_tot_all dta ON dta.employee_id = d.employee_id
+                           AND dta.work_date = (d.work_date)::date
+  LEFT JOIN day_model_all dma ON dma.employee_id = d.employee_id
+                             AND dma.work_date = (d.work_date)::date
+                             AND dta.tot IS NOT NULL
   GROUP BY 1, 2
 )
 SELECT
