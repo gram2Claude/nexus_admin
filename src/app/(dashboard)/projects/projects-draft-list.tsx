@@ -73,24 +73,30 @@ export function ProjectsDraftList({
                       />
                       {p.status === "completed" ? "завершён" : "активен"}
                     </Badge>
-                    {percent !== null && (
-                      <span className="text-sm tabular-nums text-muted-foreground">
-                        {percent}% · {p.done_h}/{p.global_h} ч
-                      </span>
-                    )}
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {p.description ?? "Описания пока нет — добавь через ✏"}
                   </p>
-                  {percent !== null && (
-                    <div className="mt-2 h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-muted">
-                      <div
-                        className="h-full rounded-full"
-                        style={{ width: `${percent}%`, background: "var(--gantt-fill)" }}
-                      />
-                    </div>
-                  )}
                 </div>
+                {percent !== null && (
+                  <div className="flex shrink-0 flex-col items-end gap-1 pt-0.5">
+                    {/* фиксированная длина полосы + % справа — выравнивание в столбец (фидбек управленца) */}
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-40 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full rounded-full"
+                          style={{ width: `${percent}%`, background: "var(--gantt-fill)" }}
+                        />
+                      </div>
+                      <span className="w-10 text-right text-sm font-medium tabular-nums">
+                        {percent}%
+                      </span>
+                    </div>
+                    <span className="text-xs tabular-nums text-muted-foreground">
+                      {p.done_h}/{p.global_h} ч
+                    </span>
+                  </div>
+                )}
                 {canEdit && (
                   <Button
                     size="sm"
