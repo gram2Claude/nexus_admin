@@ -1,7 +1,11 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { can } from "@/lib/rbac";
-import { epochFactRollupAll, projectFactRollupAll } from "@/server/fact";
+import {
+  epochFactRollupAll,
+  projectFactRollupAll,
+  unallocatedModelFacts,
+} from "@/server/fact";
 
 import { ProjectsOverview, type ProjectVM } from "./projects-overview";
 
@@ -44,14 +48,27 @@ export default async function ProjectsPage() {
     );
   }
 
+  // Employee видит только проекты, где он участник (t28, server-side)
+  const projectsSql =
+    role === "employee"
+      ? `SELECT p.id, p.slug, p.name, p.description, p.status, p.done_h::float8 AS done_h,
+                p.global_h::float8 AS global_h, p.start_date::text, p.end_date::text
+         FROM nexus_admin.projects p
+         WHERE NOT p.archived AND EXISTS (
+           SELECT 1 FROM nexus_admin.project_members pm
+           WHERE pm.project_id = p.id AND pm.user_id = $1)
+         ORDER BY p.status, p.slug`
+      : `SELECT id, slug, name, description, status, done_h::float8 AS done_h,
+                global_h::float8 AS global_h, start_date::text, end_date::text
+         FROM nexus_admin.projects WHERE NOT archived ORDER BY status, slug`;
+
   // Факт-роллапы НЕ запрашиваются без права seeCosts: иначе стоимости сериализуются
   // в client-payload и матрица прав обходится через исходник страницы (ревью эпохи 4, P1)
-  const [{ rows: projects }, { rows: epochs }, epochFacts, projectFacts] = await Promise.all([
-    db.query<ProjectRow>(
-      `SELECT id, slug, name, description, status, done_h::float8 AS done_h,
-              global_h::float8 AS global_h, start_date::text, end_date::text
-       FROM nexus_admin.projects WHERE NOT archived ORDER BY status, slug`
-    ),
+  const [{ rows: projects }, { rows: epochs }, epochFacts, projectFacts, unallocated] =
+    await Promise.all([
+    role === "employee"
+      ? db.query<ProjectRow>(projectsSql, [session!.user.id])
+      : db.query<ProjectRow>(projectsSql),
     db.query<EpochRow>(
       `SELECT p.slug AS project_slug, e.ext_id, e.name, e.description, e.ord,
               e.start_date::text, e.end_date::text, e.epoch_h::float8 AS epoch_h,
@@ -63,7 +80,20 @@ export default async function ProjectsPage() {
     ),
     canSeeCosts ? epochFactRollupAll() : Promise.resolve([]),
     canSeeCosts ? projectFactRollupAll() : Promise.resolve([]),
+    canSeeCosts ? unallocatedModelFacts() : Promise.resolve([]),
   ]);
+
+  // «нераспределённое» — суммой (бакет портфеля, спека 3.2/5 — t27)
+  const unallocatedSum = canSeeCosts
+    ? unallocated.reduce(
+        (a, m) => ({
+          hours: a.hours + m.minutes / 60,
+          tokens: a.tokens + m.tokens,
+          costUsd: a.costUsd + m.cost_usd,
+        }),
+        { hours: 0, tokens: 0, costUsd: 0 }
+      )
+    : null;
 
   const epochFactMap = new Map(
     epochFacts.map((f) => [`${f.project_slug}:${f.epoch_ext_id}`, f])
@@ -111,6 +141,7 @@ export default async function ProjectsPage() {
       canEdit={can.editProjectMeta(role)}
       canSeeCosts={canSeeCosts}
       todayIso={new Date().toISOString().slice(0, 10)}
+      unallocated={unallocatedSum}
     />
   );
 }
