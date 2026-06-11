@@ -2,7 +2,7 @@
 
 import { ArrowLeft, UserMinus, UserPlus } from "lucide-react";
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 
 import {
   Accordion,
@@ -142,9 +142,12 @@ export function Drilldown({
 }) {
   const [sheetTask, setSheetTask] = useState<TaskVM | null>(null);
   const [models, setModels] = useState<ModelFact[] | null>(null);
+  const [modelsError, setModelsError] = useState<string | undefined>();
   const [memberToAdd, setMemberToAdd] = useState<string>("");
-  const [error, setError] = useState<string | undefined>();
+  const [memberError, setMemberError] = useState<string | undefined>();
   const [pending, startTransition] = useTransition();
+  // защита от гонки: медленный ответ по задаче A не должен затирать открытую B (ревью эпохи 5)
+  const currentTaskRef = useRef<string | null>(null);
 
   const pct = project.globalH
     ? Math.min(100, Math.round((100 * project.doneH) / project.globalH))
@@ -155,9 +158,12 @@ export function Drilldown({
     if (!canSeeCosts || !t.readableId) return;
     setSheetTask(t);
     setModels(null);
+    setModelsError(undefined);
+    currentTaskRef.current = t.readableId;
     startTransition(async () => {
-      const r = await getTaskModels(t.readableId!);
-      setError(r.error);
+      const r = await getTaskModels(t.readableId!, project.slug);
+      if (currentTaskRef.current !== t.readableId) return; // устаревший ответ — игнор
+      setModelsError(r.error);
       setModels(r.models ?? []);
     });
   };
@@ -223,8 +229,8 @@ export function Drilldown({
                   disabled={pending}
                   onClick={() =>
                     startTransition(async () => {
-                      const r = await removeMember(project.id, m.id);
-                      setError(r.error);
+                      const r = await removeMember(project.id, m.id, project.slug);
+                      setMemberError(r.error);
                     })
                   }
                 >
@@ -251,8 +257,8 @@ export function Drilldown({
                 disabled={pending || !memberToAdd}
                 onClick={() =>
                   startTransition(async () => {
-                    const r = await addMember(project.id, memberToAdd);
-                    setError(r.error);
+                    const r = await addMember(project.id, memberToAdd, project.slug);
+                    setMemberError(r.error);
                     if (!r.error) setMemberToAdd("");
                   })
                 }
@@ -260,7 +266,7 @@ export function Drilldown({
                 <UserPlus className="size-4" />
               </Button>
             </div>
-            {error && <p className="w-full text-sm text-destructive">{error}</p>}
+            {memberError && <p className="w-full text-sm text-destructive">{memberError}</p>}
           </CardContent>
         </Card>
       )}
@@ -288,7 +294,9 @@ export function Drilldown({
                 <div className="flex items-center gap-3">
                   <StatusBadge status={e.status} />
                   <span className="w-10 text-right text-sm font-medium tabular-nums">
-                    {levelPct(e.doneH, e.planH) ?? "—"}%
+                    {levelPct(e.doneH, e.planH) !== null
+                      ? `${levelPct(e.doneH, e.planH)}%`
+                      : "—"}
                   </span>
                 </div>
               </div>
@@ -320,7 +328,9 @@ export function Drilldown({
                         <div className="flex items-center gap-3">
                           <StatusBadge status={s.status} />
                           <span className="w-10 text-right text-sm font-medium tabular-nums">
-                            {levelPct(s.doneH, s.planH) ?? "—"}%
+                            {levelPct(s.doneH, s.planH) !== null
+                              ? `${levelPct(s.doneH, s.planH)}%`
+                              : "—"}
                           </span>
                         </div>
                       </div>
@@ -353,7 +363,11 @@ export function Drilldown({
                                   ? "cursor-pointer"
                                   : undefined
                               }
-                              onClick={() => openTask(t)}
+                              onClick={
+                                canSeeCosts && t.readableId
+                                  ? () => openTask(t)
+                                  : undefined
+                              }
                             >
                               <TableCell className="whitespace-nowrap text-xs tabular-nums">
                                 {t.readableId ?? "—"}
@@ -408,7 +422,9 @@ export function Drilldown({
             </SheetDescription>
           </SheetHeader>
           <div className="px-4 pb-4">
-            {models === null ? (
+            {modelsError ? (
+              <p className="text-sm text-destructive">{modelsError}</p>
+            ) : models === null ? (
               <p className="text-sm text-muted-foreground">Загружаем модели…</p>
             ) : models.length === 0 ? (
               <p className="text-sm text-muted-foreground">

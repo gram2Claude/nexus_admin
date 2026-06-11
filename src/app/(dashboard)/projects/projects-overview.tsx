@@ -61,7 +61,8 @@ export function fmtUsd(n: number): string {
 
 /** Фактическое время в формате «00 ч 50 мин» (решение управленца, 2026-06-11). */
 export function fmtTime(hours: number): string {
-  const total = Math.round(hours * 60);
+  if (!Number.isFinite(hours)) return "—"; // страховка от NaN/Infinity (ревью эпохи 5)
+  const total = Math.max(0, Math.round(hours * 60));
   const h = Math.floor(total / 60);
   const m = total % 60;
   return `${String(h).padStart(2, "0")} ч ${String(m).padStart(2, "0")} мин`;
@@ -214,7 +215,9 @@ export function ProjectsOverview({
               dimCompleted={filter === "all"}
               todayIso={todayIso}
             />
-            {canSeeCosts && unallocated && unallocated.tokens > 0 && (
+            {canSeeCosts &&
+              unallocated &&
+              (unallocated.tokens > 0 || unallocated.hours > 0 || unallocated.costUsd > 0) && (
               <p className="pl-44 pt-2 text-xs tabular-nums text-muted-foreground">
                 Нераспределённое (затраты без привязки к задачам, весь портфель):{" "}
                 {fmtTime(unallocated.hours)} · {fmtTokens(unallocated.tokens)} ток ·{" "}

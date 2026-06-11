@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { can, type Role } from "@/lib/rbac";
-import { epochFactRollupAll, taskFactsByProject } from "@/server/fact";
+import { epochFactRollupAll, sprintFactRollup, taskFactsByProject } from "@/server/fact";
 
 import { Drilldown, type DrilldownVM } from "./drilldown";
 
@@ -28,16 +28,17 @@ export default async function ProjectDrilldownPage({
   const project = projRows[0];
   if (!project) notFound();
 
-  // Employee — только участники проекта (t28, server-side)
+  // Employee — только участники проекта (t28, server-side).
+  // notFound, не redirect: иначе по разнице ответов можно перечислять slug'и (ревью эпохи 5)
   if (role === "employee") {
     const { rows } = await db.query(
       "SELECT 1 FROM nexus_admin.project_members WHERE project_id = $1 AND user_id = $2",
       [project.id, session.user.id]
     );
-    if (!rows[0]) redirect("/projects");
+    if (!rows[0]) notFound();
   }
 
-  const [{ rows: epochs }, { rows: sprints }, { rows: tasks }, taskFacts, epochFacts] =
+  const [{ rows: epochs }, { rows: sprints }, { rows: tasks }, taskFacts, epochFacts, sprintFacts] =
     await Promise.all([
       db.query(
         `SELECT ext_id, name, description, ord, start_date::text, end_date::text,
@@ -54,7 +55,7 @@ export default async function ProjectDrilldownPage({
         [project.id]
       ),
       db.query(
-        `SELECT t.ext_id, t.readable_id, t.name, t.description, t.task_type, t.status,
+        `SELECT t.ext_id, t.readable_id, t.name, t.task_type, t.status,
                 t.estimate_h::float8 AS estimate_h, t.assignee, s.ext_id AS sprint_ext_id
          FROM nexus_admin.tasks t JOIN nexus_admin.sprints s ON s.id = t.sprint_id
          WHERE t.project_id = $1 AND NOT t.archived ORDER BY t.ext_id`,
@@ -62,6 +63,7 @@ export default async function ProjectDrilldownPage({
       ),
       canSeeCosts ? taskFactsByProject(slug) : Promise.resolve([]),
       canSeeCosts ? epochFactRollupAll() : Promise.resolve([]),
+      canSeeCosts ? sprintFactRollup(slug) : Promise.resolve(new Map()),
     ]);
 
   const tf = new Map(taskFacts.map((f) => [f.readable_id, f]));
@@ -69,21 +71,26 @@ export default async function ProjectDrilldownPage({
     epochFacts.filter((f) => f.project_slug === slug).map((f) => [f.epoch_ext_id, f])
   );
 
-  // участники + кандидаты (управление — Owner/Admin)
+  // участники + кандидаты — ТОЛЬКО для Owner/Admin: иначе список (UUID+имена/email)
+  // сериализуется в payload employee (ревью эпохи 5, тот же анти-паттерн что с затратами)
   const canManageMembers = can.manageMembership(role);
+  const emptyRows = Promise.resolve({ rows: [] as { id: string; label: string }[] });
   const [{ rows: members }, { rows: allUsers }] = await Promise.all([
-    db.query(
-      `SELECT u.id, COALESCE(u.name, u.email) AS label
-       FROM nexus_admin.project_members pm JOIN nexus_admin.users u ON u.id = pm.user_id
-       WHERE pm.project_id = $1 ORDER BY label`,
-      [project.id]
-    ),
     canManageMembers
       ? db.query(
-          `SELECT id, COALESCE(name, email) AS label FROM nexus_admin.users
-           WHERE status = 'active' ORDER BY label`
+          `SELECT u.id, COALESCE(u.name, u.email) AS label
+           FROM nexus_admin.project_members pm JOIN nexus_admin.users u ON u.id = pm.user_id
+           WHERE pm.project_id = $1 ORDER BY label`,
+          [project.id]
         )
-      : Promise.resolve({ rows: [] as { id: string; label: string }[] }),
+      : emptyRows,
+    canManageMembers
+      ? db.query(
+          // кандидаты — активные Employee (матрица: членство имеет смысл для них)
+          `SELECT id, COALESCE(name, email) AS label FROM nexus_admin.users
+           WHERE status = 'active' AND role = 'employee' ORDER BY label`
+        )
+      : emptyRows,
   ]);
 
   const statusOf = (list: { status: string }[]): "done" | "wip" | "todo" => {
@@ -100,16 +107,19 @@ export default async function ProjectDrilldownPage({
     status: project.status,
     doneH: project.done_h,
     globalH: project.global_h,
-    fact: canSeeCosts
-      ? [...tf.values()].reduce(
-          (a, f) => ({
-            hours: a.hours + f.fact_minutes / 60,
-            tokens: a.tokens + f.tokens,
-            costUsd: a.costUsd + f.cost_usd,
-          }),
-          { hours: 0, tokens: 0, costUsd: 0 }
-        )
-      : null,
+    // факт проекта = ВСЕ строки v_task_fact слага (включая задачи вне дерева кабинета) —
+    // самое честное «итого потрачено»; при нуле фактов — null, не {0,0,0} (ревью эпохи 5)
+    fact:
+      canSeeCosts && tf.size > 0
+        ? [...tf.values()].reduce(
+            (a, f) => ({
+              hours: a.hours + f.fact_minutes / 60,
+              tokens: a.tokens + f.tokens,
+              costUsd: a.costUsd + f.cost_usd,
+            }),
+            { hours: 0, tokens: 0, costUsd: 0 }
+          )
+        : null,
     epochs: epochs.map((e) => {
       const eTasks = tasks.filter((t) =>
         sprints.some((s) => s.epoch_ext_id === e.ext_id && s.ext_id === t.sprint_ext_id)
@@ -132,21 +142,13 @@ export default async function ProjectDrilldownPage({
           .filter((s) => s.epoch_ext_id === e.ext_id)
           .map((s) => {
             const sTasks = tasks.filter((t) => t.sprint_ext_id === s.ext_id);
-            const sFact = canSeeCosts
-              ? sTasks.reduce(
-                  (a, t) => {
-                    const f2 = t.readable_id ? tf.get(t.readable_id) : undefined;
-                    return f2
-                      ? {
-                          hours: a.hours + f2.fact_minutes / 60,
-                          tokens: a.tokens + f2.tokens,
-                          costUsd: a.costUsd + f2.cost_usd,
-                        }
-                      : a;
-                  },
-                  { hours: 0, tokens: 0, costUsd: 0 }
-                )
-              : null;
+            // sprint-факт из roll-up (включая архивные задачи) — единообразно
+            // с уровнями эпохи/проекта (ревью эпохи 5)
+            const sf = sprintFacts.get(s.ext_id);
+            const sFact =
+              canSeeCosts && sf
+                ? { hours: sf.fact_minutes / 60, tokens: sf.tokens, costUsd: sf.cost_usd }
+                : null;
             return {
               extId: s.ext_id,
               name: s.name,
