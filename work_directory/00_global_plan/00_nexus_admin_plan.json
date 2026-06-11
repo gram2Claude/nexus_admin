@@ -488,7 +488,8 @@
               "plane_identifier": "NEXADM-20",
               "plane_linked_cycle": true,
               "plane_linked_module": true,
-              "done_at": "2026-06-11"
+              "done_at": "2026-06-11",
+              "merge_sha": "1d80295e97b1fbd62100b371f9510ad9dc8b80ea"
             },
             {
               "id": "t21",
@@ -500,11 +501,13 @@
               "estimate_h": 6.75,
               "ai_estimate_h": 1.25,
               "task_type": "code",
-              "status": "in_progress",
+              "status": "done",
               "plane_issue_id": "e317d383-d6e2-48c6-95f7-b43d92a83eef",
               "plane_identifier": "NEXADM-21",
               "plane_linked_cycle": true,
-              "plane_linked_module": true
+              "plane_linked_module": true,
+              "done_at": "2026-06-11",
+              "merge_sha": "1d80295e97b1fbd62100b371f9510ad9dc8b80ea"
             },
             {
               "id": "t33",
@@ -516,8 +519,10 @@
               "estimate_h": 4,
               "ai_estimate_h": 0.75,
               "task_type": "code",
-              "status": "in_progress",
-              "plane_identifier": "NEXADM-33"
+              "status": "done",
+              "plane_identifier": "NEXADM-33",
+              "done_at": "2026-06-11",
+              "merge_sha": "1d80295e97b1fbd62100b371f9510ad9dc8b80ea"
             }
           ],
           "plane_cycle_id": "59c51e5c-9937-4a25-93ba-f27a96cf866c"
@@ -542,11 +547,13 @@
               "estimate_h": 9.75,
               "ai_estimate_h": 2,
               "task_type": "code",
-              "status": "in_progress",
+              "status": "done",
               "plane_issue_id": "772476d3-45cc-4590-9ee5-a6567048e514",
               "plane_identifier": "NEXADM-22",
               "plane_linked_cycle": true,
-              "plane_linked_module": true
+              "plane_linked_module": true,
+              "done_at": "2026-06-11",
+              "merge_sha": "1d80295e97b1fbd62100b371f9510ad9dc8b80ea"
             },
             {
               "id": "t23",
@@ -558,11 +565,13 @@
               "estimate_h": 6.75,
               "ai_estimate_h": 1.25,
               "task_type": "code",
-              "status": "in_progress",
+              "status": "done",
               "plane_issue_id": "e4b7f08b-6648-4de9-8912-880e6b241504",
               "plane_identifier": "NEXADM-23",
               "plane_linked_cycle": true,
-              "plane_linked_module": true
+              "plane_linked_module": true,
+              "done_at": "2026-06-11",
+              "merge_sha": "1d80295e97b1fbd62100b371f9510ad9dc8b80ea"
             },
             {
               "id": "t24",
@@ -574,11 +583,13 @@
               "estimate_h": 3,
               "ai_estimate_h": 0.5,
               "task_type": "qa",
-              "status": "in_progress",
+              "status": "done",
               "plane_issue_id": "f05c6dbb-5f14-4c47-bf87-6b122e2934cc",
               "plane_identifier": "NEXADM-24",
               "plane_linked_cycle": true,
-              "plane_linked_module": true
+              "plane_linked_module": true,
+              "done_at": "2026-06-11",
+              "merge_sha": "1d80295e97b1fbd62100b371f9510ad9dc8b80ea"
             }
           ],
           "plane_cycle_id": "3fcc2ec1-889a-4293-ae20-47b68c2327c9"

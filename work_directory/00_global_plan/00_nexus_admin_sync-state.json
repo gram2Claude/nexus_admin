@@ -12,17 +12,20 @@
   "target_branch": "master",
   "merged_pending_done": [],
   "last_merge": {
-    "sha": "34d525fa80387a0ba62d75a6d04e54976a3c13b0",
+    "sha": "1d80295e97b1fbd62100b371f9510ad9dc8b80ea",
     "branch": "oleg->master",
     "plane_ids": [
-      "NEXADM-16",
-      "NEXADM-17",
-      "NEXADM-18",
-      "NEXADM-19"
+      "NEXADM-20",
+      "NEXADM-21",
+      "NEXADM-33",
+      "NEXADM-22",
+      "NEXADM-23",
+      "NEXADM-24"
     ],
-    "at": "2026-06-11T07:10:41.250Z"
+    "at": "2026-06-11T09:57:34.909Z"
   },
   "branch_sha": {
-    "master": "34d525fa80387a0ba62d75a6d04e54976a3c13b0"
-  }
+    "master": "1d80295e97b1fbd62100b371f9510ad9dc8b80ea"
+  },
+  "pending_registry_done": []
 }
