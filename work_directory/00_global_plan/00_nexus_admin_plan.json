@@ -805,6 +805,60 @@
         }
       ],
       "plane_module_id": "3ba8a2a6-02c8-41ae-a31d-f22bde23976a"
+    },
+    {
+      "id": "e7",
+      "name": "Эпоха 7. Доработки после первой очереди",
+      "description": "Малые доработки кабинета по запросам управленца",
+      "ord": 7,
+      "start_date": "2026-06-11",
+      "end_date": "2026-06-15",
+      "epoch_h": 6,
+      "epoch_ai_h": 1.5,
+      "done_h": 0,
+      "sprints": [
+        {
+          "id": "s7_1",
+          "name": "Спринт 7.1. Профиль",
+          "ord": 13,
+          "start_date": "2026-06-11",
+          "end_date": "2026-06-15",
+          "sprint_h": 6,
+          "sprint_ai_h": 1.5,
+          "done_h": 0,
+          "tasks": [
+            {
+              "id": "t34",
+              "plane_issue_id": null,
+              "plane_identifier": "NEXADM-34",
+              "name": "Страница Профиль: данные аккаунта + смена пароля",
+              "description": "Маршрут /profile для всех ролей: имя (редактируемое), email/роль read-only; смена пароля (текущий + новый x2, bcrypt-проверка текущего, min 12, rate-limit); пункт Профиль в дропдауне хедера",
+              "done_criteria": "Пользователь меняет имя и пароль из кабинета; вход со старым паролем невозможен; смоук обеих тем",
+              "task_type": "code",
+              "realistic_h": 2.5,
+              "pessimistic_h": 4,
+              "ai_estimate_h": 1,
+              "estimate_h": 4.25,
+              "status": "in_progress"
+            },
+            {
+              "id": "t35",
+              "plane_issue_id": null,
+              "plane_identifier": "NEXADM-35",
+              "name": "QA профиля и ревью",
+              "description": "Сквозной прогон смены имени/пароля (вкл. неверный текущий пароль, короткий новый, rate-limit), двойное ревью, правки",
+              "done_criteria": "QA-отчёт без дефектов, протокол ревью с триажем",
+              "task_type": "qa",
+              "realistic_h": 1,
+              "pessimistic_h": 1.5,
+              "ai_estimate_h": 0.5,
+              "estimate_h": 1.75,
+              "status": "in_progress"
+            }
+          ]
+        }
+      ]
     }
-  ]
+  ],
+  "global_h": 186.5
 }
