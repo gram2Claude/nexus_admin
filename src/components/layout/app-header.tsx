@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 
 import { logout } from "@/app/(dashboard)/actions";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -64,17 +65,31 @@ export function AppHeader({
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
+      {/* Свежесть данных из sync_meta (NEXADM-15); warning при > 12 ч.
+          Переехала из правого угла к названию страницы (фидбек управленца) */}
+      <Separator orientation="vertical" className="!h-5 hidden sm:block" />
+      <span
+        className={`hidden items-center gap-1.5 text-xs sm:flex ${
+          freshness.stale ? "font-medium text-amber-600" : "text-muted-foreground"
+        }`}
+      >
+        <RefreshCw className="size-3.5" />
+        {freshness.stale ? `данные устарели (${freshness.label})` : `обновлено: ${freshness.label}`}
+      </span>
 
       <div className="ml-auto flex items-center gap-4">
-        {/* Свежесть данных из sync_meta (NEXADM-15); warning при > 12 ч */}
-        <span
-          className={`hidden items-center gap-1.5 text-xs sm:flex ${
-            freshness.stale ? "font-medium text-amber-600" : "text-muted-foreground"
-          }`}
+        {/* переключатель темы — на месте «обновлено» (фидбек управленца);
+            иконки через dark:-классы, чтобы SSR-разметка не зависела от темы */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-8"
+          aria-label="Переключить тему"
+          onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
         >
-          <RefreshCw className="size-3.5" />
-          {freshness.stale ? `данные устарели (${freshness.label})` : `обновлено: ${freshness.label}`}
-        </span>
+          <Moon className="size-4 dark:hidden" />
+          <Sun className="hidden size-4 dark:block" />
+        </Button>
         <Separator orientation="vertical" className="!h-5" />
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-muted">
