@@ -46,7 +46,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+<<<<<<< Updated upstream
 
 # локальные артефакты синка
 scripts/sync/sync.log
 scripts/sync/sync-run.cmd
+=======
+.gstack/
+>>>>>>> Stashed changes
