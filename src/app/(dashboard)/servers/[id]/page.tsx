@@ -43,6 +43,10 @@ function fmtGb(mb: number | null | undefined): string {
   return `${(mb / 1024).toFixed(1)} GB`;
 }
 
+function pct(v: string | null): string {
+  return v == null ? "—" : `${v}%`;
+}
+
 function InventoryBlock({ inv, mem }: { inv: Inventory | null; mem: { total: number | null; swap: number | null } }) {
   if (!inv) {
     return <p className="text-sm text-muted-foreground">Инвентарь ещё не собран (обновляется раз в сутки).</p>;
@@ -172,13 +176,13 @@ export default async function ServerPage({ params }: { params: Promise<{ id: str
                     <TableRow key={a.period}>
                       <TableCell>{PERIOD_LABELS[a.period]}</TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {a.cpu_avg ?? "—"}% / {a.cpu_max ?? "—"}%
+                        {pct(a.cpu_avg)} / {pct(a.cpu_max)}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {a.mem_avg ?? "—"}% / {a.mem_max ?? "—"}%
+                        {pct(a.mem_avg)} / {pct(a.mem_max)}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">{a.disk_avg ?? "—"}%</TableCell>
-                      <TableCell className="text-right tabular-nums">{a.availability_pct ?? "—"}%</TableCell>
+                      <TableCell className="text-right tabular-nums">{pct(a.disk_avg)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{pct(a.availability_pct)}</TableCell>
                       <TableCell className="text-right tabular-nums">{a.incidents}</TableCell>
                     </TableRow>
                   ))}

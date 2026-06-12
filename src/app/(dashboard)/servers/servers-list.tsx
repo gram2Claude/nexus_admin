@@ -84,11 +84,10 @@ export function ServerFormFields({ server }: { server?: ServerOverview }) {
         </div>
       </div>
       <div className="flex items-center gap-2">
+        {/* checked → отправляется "on"; снят → поле отсутствует и action пишет false */}
         <input
           id="enabled" name="enabled" type="checkbox" className="size-4 accent-primary"
           defaultChecked={server?.enabled ?? true}
-          // value="on" по умолчанию; в action enabled = значение !== "off", отсутствие = off
-          onChange={() => {}}
         />
         <Label htmlFor="enabled">Опрашивать сервер (enabled)</Label>
       </div>

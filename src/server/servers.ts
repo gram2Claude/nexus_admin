@@ -81,13 +81,19 @@ export type AggRow = {
   incidents: string;
 };
 
-/** Схема server_checker может отсутствовать (42P01/3F000) — пустое состояние, не падение */
+/** Схема server_checker может отсутствовать (42P01/3F000) — пустое состояние, не падение.
+ *  42501 (нет прав) тоже не роняет страницу, но логируется: сломанные гранты не должны
+ *  молча выглядеть как «серверов нет» (ревью). */
 async function schemaSafe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   try {
     return await fn();
   } catch (e) {
     const code = (e as { code?: string }).code;
-    if (code === "42P01" || code === "3F000" || code === "42501") return fallback;
+    if (code === "42501") {
+      console.error("server_checker: нет прав у роли кабинета — прогони setup-roles.mjs в репозитории server_checker");
+      return fallback;
+    }
+    if (code === "42P01" || code === "3F000") return fallback;
     throw e;
   }
 }
@@ -159,28 +165,32 @@ export async function getAggregates(id: number): Promise<AggRow[]> {
   );
 }
 
-/** Ряды для графиков: day → почасовые за 24 ч, week → почасовые за 7 д, month → подневные за 30 д */
+/** Ряды для графиков: day → почасовые за 24 ч, week → почасовые за 7 д, month → подневные за 30 д.
+ *  Ревью: фильтруем по ts ИСХОДНОЙ таблицы (sargable, работает индекс server_id+ts),
+ *  а не по bucket готовой view — иначе агрегируется вся история. Дата — строгий ISO
+ *  (Safari не парсит "YYYY-MM-DD HH:MM:SS+00" из bucket::text). */
 export async function getSeries(
   id: number
 ): Promise<{ day: SeriesPoint[]; week: SeriesPoint[]; month: SeriesPoint[] }> {
-  const hourQ = (win: string) =>
+  const seriesQ = (trunc: "hour" | "day", win: string) =>
     db.query<SeriesPoint>(
-      `SELECT bucket::text, cpu_avg, cpu_max, mem_avg, mem_max, disk_avg
-       FROM server_checker.v_series_hour
-       WHERE server_id = $1 AND bucket > now() - $2::interval ORDER BY bucket`,
+      `SELECT to_char(date_trunc('${trunc}', ts) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS bucket,
+         round(avg(cpu_pct)::numeric, 1)::text  AS cpu_avg,
+         round(max(cpu_pct)::numeric, 1)::text  AS cpu_max,
+         round(avg(mem_used_pct)::numeric, 1)::text AS mem_avg,
+         round(max(mem_used_pct)::numeric, 1)::text AS mem_max,
+         round(avg(disk_max_used_pct)::numeric, 1)::text AS disk_avg
+       FROM server_checker.v_snapshot_enriched
+       WHERE server_id = $1 AND ts > now() - $2::interval
+       GROUP BY date_trunc('${trunc}', ts) ORDER BY 1`,
       [id, win]
     );
   return schemaSafe(
     async () => {
       const [day, week, month] = await Promise.all([
-        hourQ("24 hours"),
-        hourQ("7 days"),
-        db.query<SeriesPoint>(
-          `SELECT bucket::text, cpu_avg, cpu_max, mem_avg, mem_max, disk_avg
-           FROM server_checker.v_series_day
-           WHERE server_id = $1 AND bucket > now() - interval '30 days' ORDER BY bucket`,
-          [id]
-        ),
+        seriesQ("hour", "24 hours"),
+        seriesQ("hour", "7 days"),
+        seriesQ("day", "30 days"),
       ]);
       return { day: day.rows, week: week.rows, month: month.rows };
     },
