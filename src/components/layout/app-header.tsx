@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import {
   Breadcrumb,
   BreadcrumbItem,
+  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
 } from "@/components/ui/breadcrumb";
@@ -62,7 +63,15 @@ export function AppHeader({
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbPage>{section ? titles[section] : "Кабинет"}</BreadcrumbPage>
+            {/* глубже корня раздела название кликабельно и ведёт на корень
+                (скрин 00_12: «Проекты» с drill-down → /projects) */}
+            {section && pathname !== section ? (
+              <BreadcrumbLink asChild>
+                <Link href={section}>{titles[section]}</Link>
+              </BreadcrumbLink>
+            ) : (
+              <BreadcrumbPage>{section ? titles[section] : "Кабинет"}</BreadcrumbPage>
+            )}
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
