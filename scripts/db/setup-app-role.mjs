@@ -57,11 +57,31 @@ await app.connect();
 try {
   const ok = await app.query("SELECT count(*) FROM nexus_admin.v_task_fact");
   console.log("view-доступ под ролью: ок,", ok.rows[0].count, "строк");
+  // server_checker (раздел «Серверы», SRVCHK-11): гранты выдаёт setup-roles.mjs
+  // ТОГО репозитория; здесь probe с guard на свежую БД без схемы (миграция 008)
+  try {
+    const sc = await app.query("SELECT count(*) FROM server_checker.v_server_overview");
+    console.log("server_checker-доступ под ролью: ок,", sc.rows[0].count, "серверов");
+  } catch (e) {
+    if (e.code === "3F000" || e.code === "42P01") {
+      console.log("server_checker: схема ещё не создана — раздел «Серверы» будет пуст (не ошибка)");
+    } else if (e.code === "42501") {
+      console.error("server_checker: нет прав — прогони setup-roles.mjs в репозитории server_checker");
+      process.exitCode = 1;
+    } else throw e;
+  }
   let denied = 0;
+  const scProbes = [];
+  try {
+    await app.query("SELECT 1 FROM server_checker.metric_snapshot LIMIT 0");
+    // схема есть → негативный probe: кабинет НЕ пишет в метрики (только server)
+    scProbes.push("INSERT INTO server_checker.metric_snapshot (server_id, collect_ok) VALUES (1, true)");
+  } catch { /* схемы нет — probe пропускаем */ }
   for (const probe of [
     "SELECT count(*) FROM public.task",
     "INSERT INTO public.task (project_id) VALUES (1)",
     "UPDATE nexus_admin.sync_meta SET value = 'x' WHERE key = 'last_sync_at'",
+    ...scProbes,
   ]) {
     try {
       await app.query(probe);
@@ -76,7 +96,7 @@ try {
       }
     }
   }
-  console.log(`границы: ${denied}/3 запрещённых операций отклонено`);
+  console.log(`границы: ${denied}/${3 + scProbes.length} запрещённых операций отклонено`);
 } finally {
   await app.end();
 }
