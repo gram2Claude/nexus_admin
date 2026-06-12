@@ -494,7 +494,9 @@ export function Drilldown({
             data-[side=right]:sm:max-w-sm специфичнее голого sm:max-w-* и иначе побеждает */}
         <SheetContent className="data-[side=right]:w-full data-[side=right]:sm:max-w-lg">
           <SheetHeader>
-            <SheetTitle className="text-base">
+            {/* pr-8: кнопка закрытия (size-7 + right-3 = 40px) absolute — длинный
+                заголовок иначе уходит под крестик (скрин 00_10) */}
+            <SheetTitle className="pr-8 text-base">
               {sheetTask?.readableId} · {sheetTask?.name}
             </SheetTitle>
             <SheetDescription className="flex flex-wrap items-center gap-2">
