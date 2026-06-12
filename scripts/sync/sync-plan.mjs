@@ -75,6 +75,24 @@ try {
       if (!existsSync(canonPath)) throw new Error(`канон не найден: ${canonPath}`);
       const canon = readJson(canonPath); // полузаписанный файл упадёт здесь — без tombstone
 
+      // открытые внеплановые задачи реестра timechecker (спека 11) держат проект в active:
+      // «completed = весь план done И нет открытых прочих» (решение управленца 2026-06-12).
+      // Запрос ДО BEGIN: его сбой (нет реплики public.* на свежей БД) не должен
+      // абортить транзакцию проекта — статус тогда считается только по канону.
+      let openUnplanned = false;
+      try {
+        const ur = await client.query(
+          `SELECT 1 FROM public.task t JOIN public.project p ON p.id = t.project_id
+           WHERE p.slug = $1 AND t.canon_task_id IS NULL AND t.identifier IS NOT NULL
+             AND lower(t.status) NOT IN ('done', 'completed', 'cancelled', 'canceled')
+           LIMIT 1`,
+          [slug]
+        );
+        openUnplanned = ur.rowCount > 0;
+      } catch {
+        /* реплики нет — не валим синк проекта */
+      }
+
       await client.query("BEGIN");
       try {
         const proj = canon.project ?? {};
@@ -102,7 +120,7 @@ try {
             toNum(proj.global_h),
             toNum(proj.global_ai_h),
             doneH,
-            allDone ? "completed" : "active",
+            allDone && !openUnplanned ? "completed" : "active",
           ]
         );
         const projectId = pr.rows[0].id;
