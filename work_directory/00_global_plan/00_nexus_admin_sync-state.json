@@ -1,16 +1,7 @@
 {
-  "plane_project_id": "3b94977b-4582-49a7-8ed7-40647022004a",
   "plane_identifier": "NEXADM",
-  "state_map": {
-    "started": "318b4398-defc-4e85-a58d-7e8e84f3988a",
-    "completed": "0824008a-90d7-4566-825f-e7c41000159f",
-    "unstarted": "dbf86204-8277-4b9b-a451-1eb63e2b4d41",
-    "backlog": "ba691394-b728-4102-aa16-ab9941e9ac0d",
-    "cancelled": "11bde3c9-6a8e-41f0-b278-b054747e1eea"
-  },
   "published_at": "2026-06-10T18:57:50.177Z",
   "target_branch": "master",
-  "merged_pending_done": [],
   "last_merge": {
     "sha": "0c43332536b53677e38f01d167f9f845695ceab7",
     "branch": "oleg->master",
@@ -21,7 +12,25 @@
     "at": "2026-06-11T16:45:26.488Z"
   },
   "branch_sha": {
-    "master": "0c43332536b53677e38f01d167f9f845695ceab7"
+    "master": "01085a6d893ca0b0f137cc1bbf15c178df56a619"
   },
-  "pending_registry_done": []
+  "pending_registry_done": [],
+  "snapshot": {
+    "total_h": 186.5,
+    "done_h": 186.5,
+    "total_n": 35,
+    "done_n": 35,
+    "pct": 100,
+    "planned_finish": "2026-07-02",
+    "projected_finish": "2026-07-02",
+    "delta_days": 0,
+    "overdue": [],
+    "health": {
+      "db_ok": true,
+      "github_ok": true,
+      "pending_count": 0,
+      "baseline_status": "ok"
+    }
+  },
+  "last_sync": "2026-06-12T05:00:04.134Z"
 }
