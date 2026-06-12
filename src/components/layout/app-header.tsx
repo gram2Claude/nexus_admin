@@ -30,6 +30,7 @@ const titles: Record<string, string> = {
   "/employees": "Сотрудники",
   "/knowledge": "База знаний",
   "/sales": "Отдел продаж",
+  "/chats": "Чаты",
   "/users": "Пользователи",
   "/profile": "Профиль",
   "/styleguide": "Styleguide",

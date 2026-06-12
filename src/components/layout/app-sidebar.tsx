@@ -7,6 +7,7 @@ import {
   BookOpen,
   FolderKanban,
   LayoutDashboard,
+  MessagesSquare,
   UserCog,
   Users,
 } from "lucide-react";
@@ -30,6 +31,7 @@ const sections = [
   { title: "Сотрудники", href: "/employees", icon: Users, stub: true },
   { title: "База знаний", href: "/knowledge", icon: BookOpen, stub: true },
   { title: "Отдел продаж", href: "/sales", icon: Banknote, stub: true },
+  { title: "Чаты", href: "/chats", icon: MessagesSquare, stub: true },
 ];
 
 export function AppSidebar({ showUsers }: { showUsers: boolean }) {

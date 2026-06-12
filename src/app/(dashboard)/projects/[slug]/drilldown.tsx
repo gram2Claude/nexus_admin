@@ -2,7 +2,7 @@
 
 import { ArrowLeft, UserMinus, UserPlus } from "lucide-react";
 import Link from "next/link";
-import { useRef, useState, useTransition } from "react";
+import { Fragment, useRef, useState, useTransition } from "react";
 
 import {
   Accordion,
@@ -206,7 +206,9 @@ function TasksTable({
   );
 }
 
-/** Узел «Прочие работы» спринта: бюджет misc-задачи канона + внеплановые задачи. */
+/** Узел «Прочие работы» спринта: бюджет misc-задачи канона + внеплановые задачи.
+ *  Рендерится на уровне эпохи, сразу ПОД строкой своего спринта — виден без
+ *  раскрытия спринта (фидбек управленца, скрин 00_11). */
 function MiscBlock({
   misc,
   canSeeCosts,
@@ -217,7 +219,7 @@ function MiscBlock({
   onOpen: (t: TaskVM) => void;
 }) {
   return (
-    <div className="mt-2 rounded-md border bg-muted/30 px-3 py-2">
+    <div className="rounded-md border bg-muted/30 px-3 py-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-sm font-medium">Прочие работы</span>
         <span className="text-xs tabular-nums text-muted-foreground">
@@ -428,8 +430,8 @@ export function Drilldown({
                 className="flex flex-col gap-2"
               >
                 {e.sprints.map((s) => (
+                  <Fragment key={s.extId}>
                   <AccordionItem
-                    key={s.extId}
                     value={s.extId}
                     className="rounded-lg border bg-background/50 px-3"
                   >
@@ -458,15 +460,16 @@ export function Drilldown({
                         canSeeCosts={canSeeCosts}
                         onOpen={openTask}
                       />
-                      {s.misc && (
-                        <MiscBlock
-                          misc={s.misc}
-                          canSeeCosts={canSeeCosts}
-                          onOpen={openTask}
-                        />
-                      )}
                     </AccordionContent>
                   </AccordionItem>
+                  {s.misc && (
+                    <MiscBlock
+                      misc={s.misc}
+                      canSeeCosts={canSeeCosts}
+                      onOpen={openTask}
+                    />
+                  )}
+                  </Fragment>
                 ))}
               </Accordion>
             </AccordionContent>
