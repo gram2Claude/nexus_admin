@@ -49,7 +49,7 @@ export default async function DashboardLayout({
   return (
     <TooltipProvider>
       <SidebarProvider>
-        <AppSidebar showUsers={can.manageUsers(role)} />
+        <AppSidebar showUsers={can.manageUsers(role)} showServers={can.seeServers(role)} />
         <SidebarInset>
           <AppHeader user={user} freshness={freshness} />
           <main className="flex-1 p-6">{children}</main>

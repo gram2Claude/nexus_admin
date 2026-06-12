@@ -32,6 +32,7 @@ const titles: Record<string, string> = {
   "/knowledge": "База знаний",
   "/sales": "Отдел продаж",
   "/chats": "Чаты",
+  "/servers": "Серверы",
   "/users": "Пользователи",
   "/profile": "Профиль",
   "/styleguide": "Styleguide",
