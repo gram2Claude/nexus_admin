@@ -53,6 +53,14 @@ export type TaskVM = {
   fact: Fact;
 };
 
+/** Узел «Прочие работы» спринта (спека 11): план — бюджет канонной misc-задачи
+ *  (misc_rate, IT2), наполнение — внеплановые задачи реестра timechecker. */
+export type MiscVM = {
+  planH: number | null;
+  fact: Fact;
+  tasks: TaskVM[];
+};
+
 export type SprintVM = {
   extId: string;
   name: string;
@@ -62,6 +70,7 @@ export type SprintVM = {
   doneH: number;
   status: Status;
   fact: Fact;
+  misc: MiscVM | null;
   tasks: TaskVM[];
 };
 
@@ -88,6 +97,8 @@ export type DrilldownVM = {
   globalH: number | null;
   fact: Fact;
   epochs: EpochVM2[];
+  /** прочие работы с архивным/неизвестным спринтом — группа «вне спринтов» */
+  miscOrphans: TaskVM[];
 };
 
 const fmtD = (iso: string | null) => (iso ? `${iso.slice(8, 10)}.${iso.slice(5, 7)}` : "—");
@@ -125,6 +136,112 @@ function FactLine({ fact, planH }: { fact: Fact; planH?: number | null }) {
 function levelPct(doneH: number, planH: number | null): number | null {
   if (!planH) return null;
   return Math.min(100, Math.round((100 * doneH) / planH));
+}
+
+/** Таблица задач — общая для плановых задач спринта и «Прочих работ». */
+function TasksTable({
+  tasks,
+  canSeeCosts,
+  onOpen,
+}: {
+  tasks: TaskVM[];
+  canSeeCosts: boolean;
+  onOpen: (t: TaskVM) => void;
+}) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>ID</TableHead>
+          <TableHead>Задача</TableHead>
+          <TableHead>Тип</TableHead>
+          <TableHead>Статус</TableHead>
+          <TableHead className="text-right">План</TableHead>
+          {canSeeCosts && (
+            <>
+              <TableHead className="text-right">Факт</TableHead>
+              <TableHead className="text-right">Ток</TableHead>
+              <TableHead className="text-right">≈$</TableHead>
+            </>
+          )}
+          <TableHead>Исполнитель</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {tasks.map((t) => (
+          <TableRow
+            key={t.readableId ?? t.name}
+            className={canSeeCosts && t.readableId ? "cursor-pointer" : undefined}
+            onClick={canSeeCosts && t.readableId ? () => onOpen(t) : undefined}
+          >
+            <TableCell className="whitespace-nowrap text-xs tabular-nums">
+              {t.readableId ?? "—"}
+            </TableCell>
+            <TableCell className="max-w-72 truncate text-sm">{t.name}</TableCell>
+            <TableCell className="text-xs">{t.taskType}</TableCell>
+            <TableCell>
+              <StatusBadge status={t.status} />
+            </TableCell>
+            <TableCell className="whitespace-nowrap text-right text-xs tabular-nums">
+              {t.planH != null ? fmtTime(t.planH) : "—"}
+            </TableCell>
+            {canSeeCosts && (
+              <>
+                <TableCell className="whitespace-nowrap text-right text-xs tabular-nums">
+                  {t.fact ? fmtTime(t.fact.hours) : "—"}
+                </TableCell>
+                <TableCell className="text-right text-xs tabular-nums">
+                  {t.fact ? fmtTokens(t.fact.tokens) : "—"}
+                </TableCell>
+                <TableCell className="text-right text-xs tabular-nums">
+                  {t.fact ? `≈${fmtUsd(t.fact.costUsd)}` : "—"}
+                </TableCell>
+              </>
+            )}
+            <TableCell className="text-xs">{t.executor ?? "—"}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
+/** Узел «Прочие работы» спринта: бюджет misc-задачи канона + внеплановые задачи. */
+function MiscBlock({
+  misc,
+  canSeeCosts,
+  onOpen,
+}: {
+  misc: MiscVM;
+  canSeeCosts: boolean;
+  onOpen: (t: TaskVM) => void;
+}) {
+  return (
+    <div className="mt-2 rounded-md border bg-muted/30 px-3 py-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-sm font-medium">Прочие работы</span>
+        <span className="text-xs tabular-nums text-muted-foreground">
+          {misc.tasks.length}{" "}
+          {misc.tasks.length % 10 === 1 && misc.tasks.length % 100 !== 11
+            ? "задача"
+            : [2, 3, 4].includes(misc.tasks.length % 10) &&
+                ![12, 13, 14].includes(misc.tasks.length % 100)
+              ? "задачи"
+              : "задач"}
+          {misc.planH != null && <> · бюджет {fmtTime(misc.planH)}</>}
+          {canSeeCosts && misc.fact && (
+            <>
+              {" "}· факт {fmtTime(misc.fact.hours)} · {fmtTokens(misc.fact.tokens)} ток ·{" "}
+              ≈{fmtUsd(misc.fact.costUsd)}
+            </>
+          )}
+        </span>
+      </div>
+      {misc.tasks.length > 0 && (
+        <TasksTable tasks={misc.tasks} canSeeCosts={canSeeCosts} onOpen={onOpen} />
+      )}
+    </div>
+  );
 }
 
 export function Drilldown({
@@ -336,70 +453,18 @@ export function Drilldown({
                       </div>
                     </AccordionTrigger>
                     <AccordionContent>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>ID</TableHead>
-                            <TableHead>Задача</TableHead>
-                            <TableHead>Тип</TableHead>
-                            <TableHead>Статус</TableHead>
-                            <TableHead className="text-right">План</TableHead>
-                            {canSeeCosts && (
-                              <>
-                                <TableHead className="text-right">Факт</TableHead>
-                                <TableHead className="text-right">Ток</TableHead>
-                                <TableHead className="text-right">≈$</TableHead>
-                              </>
-                            )}
-                            <TableHead>Исполнитель</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {s.tasks.map((t) => (
-                            <TableRow
-                              key={t.readableId ?? t.name}
-                              className={
-                                canSeeCosts && t.readableId
-                                  ? "cursor-pointer"
-                                  : undefined
-                              }
-                              onClick={
-                                canSeeCosts && t.readableId
-                                  ? () => openTask(t)
-                                  : undefined
-                              }
-                            >
-                              <TableCell className="whitespace-nowrap text-xs tabular-nums">
-                                {t.readableId ?? "—"}
-                              </TableCell>
-                              <TableCell className="max-w-72 truncate text-sm">
-                                {t.name}
-                              </TableCell>
-                              <TableCell className="text-xs">{t.taskType}</TableCell>
-                              <TableCell>
-                                <StatusBadge status={t.status} />
-                              </TableCell>
-                              <TableCell className="whitespace-nowrap text-right text-xs tabular-nums">
-                                {t.planH != null ? fmtTime(t.planH) : "—"}
-                              </TableCell>
-                              {canSeeCosts && (
-                                <>
-                                  <TableCell className="whitespace-nowrap text-right text-xs tabular-nums">
-                                    {t.fact ? fmtTime(t.fact.hours) : "—"}
-                                  </TableCell>
-                                  <TableCell className="text-right text-xs tabular-nums">
-                                    {t.fact ? fmtTokens(t.fact.tokens) : "—"}
-                                  </TableCell>
-                                  <TableCell className="text-right text-xs tabular-nums">
-                                    {t.fact ? `≈${fmtUsd(t.fact.costUsd)}` : "—"}
-                                  </TableCell>
-                                </>
-                              )}
-                              <TableCell className="text-xs">{t.executor ?? "—"}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                      <TasksTable
+                        tasks={s.tasks}
+                        canSeeCosts={canSeeCosts}
+                        onOpen={openTask}
+                      />
+                      {s.misc && (
+                        <MiscBlock
+                          misc={s.misc}
+                          canSeeCosts={canSeeCosts}
+                          onOpen={openTask}
+                        />
+                      )}
                     </AccordionContent>
                   </AccordionItem>
                 ))}
@@ -408,6 +473,21 @@ export function Drilldown({
           </AccordionItem>
         ))}
       </Accordion>
+
+      {project.miscOrphans.length > 0 && (
+        <Card className="py-3">
+          <CardContent className="flex flex-col gap-2 px-4">
+            <span className="text-sm font-medium">
+              Прочие работы (вне спринтов)
+            </span>
+            <TasksTable
+              tasks={project.miscOrphans}
+              canSeeCosts={canSeeCosts}
+              onOpen={openTask}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       <Sheet open={!!sheetTask} onOpenChange={(o) => !o && setSheetTask(null)}>
         <SheetContent className="w-full sm:max-w-lg">

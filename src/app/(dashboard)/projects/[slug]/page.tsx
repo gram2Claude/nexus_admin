@@ -3,9 +3,15 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { can, type Role } from "@/lib/rbac";
-import { epochFactRollupAll, sprintFactRollup, taskFactsByProject } from "@/server/fact";
+import {
+  epochFactRollupAll,
+  sprintFactRollup,
+  taskFactsByProject,
+  unplannedTasksByProject,
+  type UnplannedTask,
+} from "@/server/fact";
 
-import { Drilldown, type DrilldownVM } from "./drilldown";
+import { Drilldown, type DrilldownVM, type TaskVM } from "./drilldown";
 
 export default async function ProjectDrilldownPage({
   params,
@@ -38,8 +44,15 @@ export default async function ProjectDrilldownPage({
     if (!rows[0]) notFound();
   }
 
-  const [{ rows: epochs }, { rows: sprints }, { rows: tasks }, taskFacts, epochFacts, sprintFacts] =
-    await Promise.all([
+  const [
+    { rows: epochs },
+    { rows: sprints },
+    { rows: tasks },
+    taskFacts,
+    epochFacts,
+    sprintFacts,
+    unplanned,
+  ] = await Promise.all([
       db.query(
         `SELECT ext_id, name, description, ord, start_date::text, end_date::text,
                 epoch_h::float8 AS epoch_h, done_h::float8 AS done_h
@@ -64,6 +77,8 @@ export default async function ProjectDrilldownPage({
       canSeeCosts ? taskFactsByProject(slug) : Promise.resolve([]),
       canSeeCosts ? epochFactRollupAll() : Promise.resolve([]),
       canSeeCosts ? sprintFactRollup(slug) : Promise.resolve(new Map()),
+      // список «прочих» видят все роли проекта; затраты фильтруются при сборке VM
+      unplannedTasksByProject(slug),
     ]);
 
   const tf = new Map(taskFacts.map((f) => [f.readable_id, f]));
@@ -99,6 +114,27 @@ export default async function ProjectDrilldownPage({
     return "todo";
   };
 
+  // канонные misc-задачи («Прочие работы», IT2) поглощаются узлом спринта:
+  // их план — бюджет узла, отдельной строкой в таблице задач они не дублируются
+  const planTasks = tasks.filter((t) => t.task_type !== "misc");
+  const toUnplannedVM = (u: UnplannedTask): TaskVM => ({
+    readableId: u.readable_id,
+    name: u.title ?? u.readable_id,
+    taskType: "misc",
+    status: u.status,
+    planH: u.estimate_h,
+    // executor — производное от факта (daily_task_time): для employee скрываем,
+    // симметрично плановым задачам, где факт-исполнитель виден только с затратами
+    executor: canSeeCosts ? u.executor : null,
+    fact: canSeeCosts
+      ? { hours: u.fact_minutes / 60, tokens: u.tokens, costUsd: u.cost_usd }
+      : null,
+  });
+  const sprintIds = new Set(sprints.map((s) => s.ext_id));
+  const miscOrphans = unplanned
+    .filter((u) => !u.sprint_ext_id || !sprintIds.has(u.sprint_ext_id))
+    .map(toUnplannedVM);
+
   const vm: DrilldownVM = {
     id: project.id,
     slug: project.slug,
@@ -120,8 +156,9 @@ export default async function ProjectDrilldownPage({
             { hours: 0, tokens: 0, costUsd: 0 }
           )
         : null,
+    miscOrphans,
     epochs: epochs.map((e) => {
-      const eTasks = tasks.filter((t) =>
+      const eTasks = planTasks.filter((t) =>
         sprints.some((s) => s.epoch_ext_id === e.ext_id && s.ext_id === t.sprint_ext_id)
       );
       const f = ef.get(e.ext_id);
@@ -141,13 +178,37 @@ export default async function ProjectDrilldownPage({
         sprints: sprints
           .filter((s) => s.epoch_ext_id === e.ext_id)
           .map((s) => {
-            const sTasks = tasks.filter((t) => t.sprint_ext_id === s.ext_id);
+            const sTasks = planTasks.filter((t) => t.sprint_ext_id === s.ext_id);
             // sprint-факт из roll-up (включая архивные задачи) — единообразно
             // с уровнями эпохи/проекта (ревью эпохи 5)
             const sf = sprintFacts.get(s.ext_id);
             const sFact =
               canSeeCosts && sf
                 ? { hours: sf.fact_minutes / 60, tokens: sf.tokens, costUsd: sf.cost_usd }
+                : null;
+            // узел «Прочие работы»: план — бюджет канонной misc-задачи (если есть),
+            // наполнение — внеплановые задачи реестра, привязанные к спринту
+            const miscBudget = tasks.find(
+              (t) => t.sprint_ext_id === s.ext_id && t.task_type === "misc"
+            );
+            const sprintUnplanned = unplanned.filter((u) => u.sprint_ext_id === s.ext_id);
+            const misc =
+              miscBudget || sprintUnplanned.length
+                ? {
+                    planH: miscBudget?.estimate_h ?? null,
+                    fact:
+                      canSeeCosts && sprintUnplanned.length
+                        ? sprintUnplanned.reduce(
+                            (a, u) => ({
+                              hours: a.hours + u.fact_minutes / 60,
+                              tokens: a.tokens + u.tokens,
+                              costUsd: a.costUsd + u.cost_usd,
+                            }),
+                            { hours: 0, tokens: 0, costUsd: 0 }
+                          )
+                        : null,
+                    tasks: sprintUnplanned.map(toUnplannedVM),
+                  }
                 : null;
             return {
               extId: s.ext_id,
@@ -158,6 +219,7 @@ export default async function ProjectDrilldownPage({
               doneH: s.done_h,
               status: statusOf(sTasks),
               fact: sFact,
+              misc,
               tasks: sTasks.map((t) => {
                 const f2 = t.readable_id ? tf.get(t.readable_id) : undefined;
                 return {
