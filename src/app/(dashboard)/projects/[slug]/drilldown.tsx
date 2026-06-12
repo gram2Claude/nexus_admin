@@ -490,7 +490,9 @@ export function Drilldown({
       )}
 
       <Sheet open={!!sheetTask} onOpenChange={(o) => !o && setSheetTask(null)}>
-        <SheetContent className="w-full sm:max-w-lg">
+        {/* ширину перебивать только с тем же data-side-вариантом: базовый
+            data-[side=right]:sm:max-w-sm специфичнее голого sm:max-w-* и иначе побеждает */}
+        <SheetContent className="data-[side=right]:w-full data-[side=right]:sm:max-w-lg">
           <SheetHeader>
             <SheetTitle className="text-base">
               {sheetTask?.readableId} · {sheetTask?.name}
