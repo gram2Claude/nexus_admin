@@ -22,7 +22,8 @@ async function requireServersManager() {
 }
 
 const NAME_RE = /^[\w.-]{1,64}$/;
-const HOST_RE = /^[a-zA-Z0-9][a-zA-Z0-9.-]{0,252}$/;
+// underscore разрешён: валидные алиасы OpenSSH могут его содержать (ревью)
+const HOST_RE = /^[a-zA-Z0-9_][a-zA-Z0-9._-]{0,252}$/;
 const USER_RE = /^[a-z_][a-z0-9_-]{0,31}$/;
 
 function parseForm(formData: FormData): { error?: string; values?: {
@@ -37,7 +38,8 @@ function parseForm(formData: FormData): { error?: string; values?: {
   const poll_interval_min = Number(formData.get("poll_interval_min") ?? 15);
   const provider = String(formData.get("provider") ?? "").trim().slice(0, 200) || null;
   const purpose = String(formData.get("purpose") ?? "").trim().slice(0, 200) || null;
-  const enabled = formData.get("enabled") !== "off";
+  // невыбранный checkbox браузер НЕ отправляет: выключение работает только так (ревью P1)
+  const enabled = formData.get("enabled") === "on";
 
   if (!NAME_RE.test(name)) return { error: "Название: латиница/цифры/точка/дефис, до 64 символов" };
   if (!HOST_RE.test(host)) return { error: "Host: алиас ssh-конфига координатора, hostname или IP" };
