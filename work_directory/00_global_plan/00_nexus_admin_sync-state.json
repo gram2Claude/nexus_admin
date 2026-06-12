@@ -12,7 +12,7 @@
     "at": "2026-06-11T16:45:26.488Z"
   },
   "branch_sha": {
-    "master": "01085a6d893ca0b0f137cc1bbf15c178df56a619"
+    "master": "957174866c0305169b75439d44a26849d9acf0d2"
   },
   "pending_registry_done": [],
   "snapshot": {
@@ -25,6 +25,10 @@
     "projected_finish": "2026-07-02",
     "delta_days": 0,
     "overdue": [],
+    "unplanned": {
+      "n": 1,
+      "minutes": 0
+    },
     "health": {
       "db_ok": true,
       "github_ok": true,
@@ -32,5 +36,5 @@
       "baseline_status": "ok"
     }
   },
-  "last_sync": "2026-06-12T05:00:04.134Z"
+  "last_sync": "2026-06-12T11:00:04.138Z"
 }
