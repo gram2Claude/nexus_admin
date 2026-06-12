@@ -11,6 +11,12 @@ function safeCallbackUrl(raw: unknown): string {
   if (!v) return "/projects";
   try {
     const u = new URL(v, "http://internal");
+    // Корень — статически пререндеренная заглушка redirect("/projects"); её
+    // закэшированный ответ несёт Location, который Next копирует в ответ
+    // server action (не фильтруется в actionsForbiddenHeaders) — браузерный
+    // fetch уходит по нему и клиент падает в global-error («This page couldn’t
+    // load»). Поэтому на корень не редиректим — сразу в /projects.
+    if (u.pathname === "/") return "/projects";
     const path = u.pathname + u.search;
     if (path.startsWith("/") && !path.startsWith("//")) return path;
   } catch {}
