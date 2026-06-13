@@ -19,6 +19,7 @@ import {
 import type { ChatBinding } from "@/server/chats";
 
 import { BindChatDialog, type ProjectOption } from "./bind-chat-dialog";
+import { ChatContentDialog } from "./chat-content-dialog";
 
 // timestamptz ::text → "2026-06-13 10:30:00.123+00"; режем до минут (детерминированно, без
 // Date.now() — нет рассинхрона гидрации). Время в UTC, как в БД.
@@ -58,7 +59,7 @@ export function ChatsList({
                 <TableHead>Проект</TableHead>
                 <TableHead>Источник</TableHead>
                 <TableHead>Обновлён</TableHead>
-                {canBind && <TableHead className="text-right">Привязка</TableHead>}
+                <TableHead className="text-right">Действия</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -86,18 +87,31 @@ export function ChatsList({
                   <TableCell className="text-sm text-muted-foreground tabular-nums">
                     {fmtUpdated(c.updated_at)}
                   </TableCell>
-                  {canBind && (
-                    <TableCell className="text-right">
-                      <BindChatDialog
-                        chat={{
-                          chat_id: c.chat_id,
-                          chat_title: c.chat_title,
-                          project_slug: c.project_slug,
-                        }}
-                        projects={projects}
-                      />
-                    </TableCell>
-                  )}
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      {/* Просмотр контента — для привязанных чатов, всем кто видит строку */}
+                      {c.project_slug && (
+                        <ChatContentDialog
+                          chat={{
+                            chat_id: c.chat_id,
+                            chat_title: c.chat_title,
+                            project_name: c.project_name,
+                          }}
+                        />
+                      )}
+                      {/* Привязка/отвязка — только owner/admin */}
+                      {canBind && (
+                        <BindChatDialog
+                          chat={{
+                            chat_id: c.chat_id,
+                            chat_title: c.chat_title,
+                            project_slug: c.project_slug,
+                          }}
+                          projects={projects}
+                        />
+                      )}
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
