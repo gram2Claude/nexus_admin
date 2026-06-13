@@ -76,14 +76,37 @@ try {
   // E11: кабинет читает tg_assistant (раздел «Чаты»)
   const okChats = await app.query("SELECT count(*) FROM tg_assistant.tg_chat_bindings");
   console.log("tg_assistant чтение под ролью: ок,", okChats.rows[0].count, "привязок");
+  // server_checker (раздел «Серверы», SRVCHK-11): гранты выдаёт setup-roles.mjs
+  // ТОГО репозитория; здесь probe с guard на свежую БД без схемы (миграция 008)
+  try {
+    const sc = await app.query("SELECT count(*) FROM server_checker.v_server_overview");
+    console.log("server_checker-доступ под ролью: ок,", sc.rows[0].count, "серверов");
+  } catch (e) {
+    if (e.code === "3F000" || e.code === "42P01") {
+      console.log("server_checker: схема ещё не создана — раздел «Серверы» будет пуст (не ошибка)");
+    } else if (e.code === "42501") {
+      console.error("server_checker: нет прав — прогони setup-roles.mjs в репозитории server_checker");
+      process.exitCode = 1;
+    } else throw e;
+  }
   let denied = 0;
+  const scProbes = [];
+  try {
+    await app.query("SELECT 1 FROM server_checker.metric_snapshot LIMIT 0");
+    // схема есть → негативный probe: кабинет НЕ пишет в метрики (только server)
+    scProbes.push("INSERT INTO server_checker.metric_snapshot (server_id, collect_ok) VALUES (1, true)");
+  } catch { /* схемы нет — probe пропускаем */ }
+  // E11: кабинет НЕ пишет дайджесты (их пишет бот) и НЕ удаляет привязки (unbind = UPDATE)
+  const tgProbes = [
+    "INSERT INTO tg_assistant.tg_digests (project_slug, date, content_md) VALUES ('x', '2026-01-01', 'x')",
+    "DELETE FROM tg_assistant.tg_chat_bindings WHERE chat_id = -1",
+  ];
   const probes = [
     "SELECT count(*) FROM public.task",
     "INSERT INTO public.task (project_id) VALUES (1)",
     "UPDATE nexus_admin.sync_meta SET value = 'x' WHERE key = 'last_sync_at'",
-    // E11: кабинет НЕ пишет дайджесты (их пишет бот) и НЕ удаляет привязки (unbind = UPDATE)
-    "INSERT INTO tg_assistant.tg_digests (project_slug, date, content_md) VALUES ('x', '2026-01-01', 'x')",
-    "DELETE FROM tg_assistant.tg_chat_bindings WHERE chat_id = -1",
+    ...scProbes,
+    ...tgProbes,
   ];
   for (const probe of probes) {
     try {

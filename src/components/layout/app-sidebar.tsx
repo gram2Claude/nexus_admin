@@ -8,6 +8,7 @@ import {
   FolderKanban,
   LayoutDashboard,
   MessagesSquare,
+  Server,
   UserCog,
   Users,
 } from "lucide-react";
@@ -34,7 +35,13 @@ const sections = [
   { title: "Чаты", href: "/chats", icon: MessagesSquare, stub: true },
 ];
 
-export function AppSidebar({ showUsers }: { showUsers: boolean }) {
+export function AppSidebar({
+  showUsers,
+  showServers,
+}: {
+  showUsers: boolean;
+  showServers: boolean;
+}) {
   const pathname = usePathname();
 
   return (
@@ -78,6 +85,21 @@ export function AppSidebar({ showUsers }: { showUsers: boolean }) {
                 {s.stub && <SidebarMenuBadge>⏳</SidebarMenuBadge>}
               </SidebarMenuItem>
             ))}
+            {/* «Серверы» — только Owner/Admin (can.seeServers), как «Пользователи» */}
+            {showServers && (
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith("/servers")}
+                  tooltip="Серверы"
+                >
+                  <Link href="/servers">
+                    <Server />
+                    <span>Серверы</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>

@@ -27,6 +27,10 @@ export const can = {
   manageMembership: (r: Role) => r === "owner" || r === "admin",
   /** Служебная страница /styleguide */
   seeStyleguide: (r: Role) => r === "owner" || r === "admin",
+  /** Раздел «Серверы» (мониторинг ресурсов, схема server_checker) */
+  seeServers: (r: Role) => r === "owner" || r === "admin",
+  /** Добавление/редактирование серверов под наблюдением */
+  manageServers: (r: Role) => r === "owner" || r === "admin",
 } as const;
 
 /**
