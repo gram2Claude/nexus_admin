@@ -26,7 +26,8 @@ function makePool(): Pool {
   // Pool маленький: Supabase pooler (transaction mode) + соседство с timechecker (риск спеки §6)
   const pool = new Pool({
     connectionString: u.toString(),
-    ssl: { ca: readFileSync(caPath, "utf8") },
+    // verify-ca (Q5): пиним CA, hostname не проверяем (БД по IP, серт SAN=IP)
+    ssl: { ca: readFileSync(caPath, "utf8"), checkServerIdentity: () => undefined },
     max: 3,
     idleTimeoutMillis: 30_000,
     // потолок времени запроса (TIME-80, DoS-харднинг): рунэвей-запрос не висит вечно. 15с —

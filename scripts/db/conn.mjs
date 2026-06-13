@@ -29,6 +29,7 @@ export function pgConfig(opts = {}) {
   if (!existsSync(caPath)) throw new Error(`Нет CA-файла ${caPath} — TLS-проверку не отключаем`);
   return {
     connectionString: u.toString(),
-    ssl: { ca: readFileSync(caPath, "utf8") },
+    // verify-ca (Q5): CA пинуем, hostname не проверяем (БД по IP, серт SAN=IP; node-pg иначе падает на servername)
+    ssl: { ca: readFileSync(caPath, "utf8"), checkServerIdentity: () => undefined },
   };
 }
