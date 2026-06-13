@@ -18,6 +18,18 @@
 - Синки план/факт остаются на машине координатора (Task Scheduler 4×/день) —
   VPS только читает БД.
 
+## Доступ к серверу (SSH) — только по ключу
+
+Боевой стенд ужесточён до **key-only SSH**: парольный вход root отключён (drop-in
+`/etc/ssh/sshd_config.d/10-ssh-hardening.conf` — `PasswordAuthentication no`,
+`PermitRootLogin prohibit-password`, `KbdInteractiveAuthentication no`). На механику деплоя это
+не влияет: автодеплой ходит **ключом** (`VPS_DEPLOY_KEY`, форс-команда — см. `.github/workflows/deploy.yml`),
+ручной админ-доступ — тоже по ключу. Парольный SSH на стенд больше не принимается.
+Аварийный доступ мимо SSH — **веб-консоль провайдера** (там работает пароль ОС).
+
+Стенд также под наблюдением **server_checker** (алиас `weecere`) — CPU/RAM/диск/инциденты
+видны в кабинете → «Серверы».
+
 ## Первичная установка
 
 ```bash
