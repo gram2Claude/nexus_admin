@@ -107,35 +107,43 @@ export async function listChats(scope: ChatScope): Promise<ChatBinding[]> {
   return rows;
 }
 
-/** Дайджесты проекта (новые сверху). Пустой список, если проект вне видимости. */
+// Потолки выборки контента (TIME-80, DoS-харднинг): ограничивают число строк, которые кабинет
+// тянет и рендерит за раз, если бот записал тысячи записей. Щедрые относительно реального объёма
+// (дайджест — 1/день, темы — единицы, журнал — десятки): обычный просмотр не урезается. Длину
+// КАЖДОЙ строки ограничивает CHECK в схеме (миграция v7). Новые — сверху.
+const DIGESTS_LIMIT = 365; // ~год дневных дайджестов
+const TOPICS_LIMIT = 500;
+const JOURNAL_LIMIT = 500;
+
+/** Дайджесты проекта (новые сверху, до DIGESTS_LIMIT). Пустой список, если проект вне видимости. */
 export async function getDigests(projectSlug: string, scope: ChatScope): Promise<Digest[]> {
   if (!allowed(scope, projectSlug)) return [];
   const { rows } = await db.query<Digest>(
     `SELECT project_slug, date::text, content_md, created_at::text
-     FROM tg_assistant.tg_digests WHERE project_slug = $1 ORDER BY date DESC`,
+     FROM tg_assistant.tg_digests WHERE project_slug = $1 ORDER BY date DESC LIMIT ${DIGESTS_LIMIT}`,
     [projectSlug]
   );
   return rows;
 }
 
-/** Темы проекта (по алфавиту). Пустой список, если проект вне видимости. */
+/** Темы проекта (по алфавиту, до TOPICS_LIMIT). Пустой список, если проект вне видимости. */
 export async function getTopics(projectSlug: string, scope: ChatScope): Promise<Topic[]> {
   if (!allowed(scope, projectSlug)) return [];
   const { rows } = await db.query<Topic>(
     `SELECT project_slug, name, content_md, updated_at::text
-     FROM tg_assistant.tg_topics WHERE project_slug = $1 ORDER BY name`,
+     FROM tg_assistant.tg_topics WHERE project_slug = $1 ORDER BY name LIMIT ${TOPICS_LIMIT}`,
     [projectSlug]
   );
   return rows;
 }
 
-/** Журнал решений/пожеланий проекта (новые сверху). Пустой список, если проект вне видимости. */
+/** Журнал решений/пожеланий проекта (новые сверху, до JOURNAL_LIMIT). Пусто, если вне видимости. */
 export async function getJournal(projectSlug: string, scope: ChatScope): Promise<JournalEntry[]> {
   if (!allowed(scope, projectSlug)) return [];
   const { rows } = await db.query<JournalEntry>(
     `SELECT id::text, project_slug, kind, date::text, text
      FROM tg_assistant.tg_journal WHERE project_slug = $1
-     ORDER BY date DESC, id DESC`,
+     ORDER BY date DESC, id DESC LIMIT ${JOURNAL_LIMIT}`,
     [projectSlug]
   );
   return rows;
