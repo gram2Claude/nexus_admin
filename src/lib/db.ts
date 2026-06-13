@@ -19,8 +19,8 @@ function makePool(): Pool {
   const u = new URL(url);
   u.searchParams.delete("sslmode");
 
-  // TLS: пиним CA Supabase (ревью 2.1); без файла — честный fail, не отключение проверки
-  const caPath = join(process.cwd(), "certs", "supabase-ca.crt");
+  // TLS: пиним CA БД (certs/db-ca.crt, override DB_CA_FILE; ревью 2.1); без файла — честный fail
+  const caPath = process.env.DB_CA_FILE || join(process.cwd(), "certs", "db-ca.crt");
   if (!existsSync(caPath)) throw new Error(`Нет CA-файла ${caPath} — TLS-проверку не отключаем`);
 
   // Pool маленький: Supabase pooler (transaction mode) + соседство с timechecker (риск спеки §6)

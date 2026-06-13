@@ -12,7 +12,7 @@ export async function register() {
   if (!process.env.DATABASE_URL_APP) {
     throw new Error("DATABASE_URL_APP не задан — production не стартует без ограниченной роли");
   }
-  const caPath = join(process.cwd(), "certs", "supabase-ca.crt");
+  const caPath = process.env.DB_CA_FILE || join(process.cwd(), "certs", "db-ca.crt");
   if (!existsSync(caPath)) {
     throw new Error(`Нет CA-файла ${caPath} — TLS-проверку не отключаем`);
   }
