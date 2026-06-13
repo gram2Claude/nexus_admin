@@ -42,6 +42,22 @@ try {
     "ALTER DEFAULT PRIVILEGES IN SCHEMA nexus_admin GRANT SELECT ON TABLES TO nexus_admin_app"
   );
   // public.* НЕ грантится вовсе — факт только через view nexus_admin.v_*
+
+  // tg_assistant (E11, TIME-73): раздел «Чаты». Кабинет ЧИТАЕТ все 4 таблицы и ПИШЕТ
+  // привязки (источник истины, bound_via='cabinet'); дайджесты/темы/журнал кабинет не пишет
+  // (их пишет бот ролью tg_assistant_bot). Схему/таблицы владеет timechecker (миграция v6).
+  await client.query("GRANT USAGE ON SCHEMA tg_assistant TO nexus_admin_app");
+  // Явный per-table SELECT (НЕ "ON ALL TABLES"): tg_assistant — чужая схема (владелец
+  // timechecker); кабинет не должен авто-получать чтение на любые будущие таблицы бота.
+  // REVOKE сначала — идемпотентно сужает прежний широкий грант (ревью codex).
+  await client.query("REVOKE SELECT ON ALL TABLES IN SCHEMA tg_assistant FROM nexus_admin_app");
+  await client.query(
+    "GRANT SELECT ON tg_assistant.tg_chat_bindings, tg_assistant.tg_digests, " +
+      "tg_assistant.tg_topics, tg_assistant.tg_journal TO nexus_admin_app"
+  );
+  await client.query(
+    "GRANT INSERT, UPDATE ON tg_assistant.tg_chat_bindings TO nexus_admin_app"
+  );
 } finally {
   await client.end();
 }
@@ -57,6 +73,9 @@ await app.connect();
 try {
   const ok = await app.query("SELECT count(*) FROM nexus_admin.v_task_fact");
   console.log("view-доступ под ролью: ок,", ok.rows[0].count, "строк");
+  // E11: кабинет читает tg_assistant (раздел «Чаты»)
+  const okChats = await app.query("SELECT count(*) FROM tg_assistant.tg_chat_bindings");
+  console.log("tg_assistant чтение под ролью: ок,", okChats.rows[0].count, "привязок");
   // server_checker (раздел «Серверы», SRVCHK-11): гранты выдаёт setup-roles.mjs
   // ТОГО репозитория; здесь probe с guard на свежую БД без схемы (миграция 008)
   try {
@@ -77,12 +96,19 @@ try {
     // схема есть → негативный probe: кабинет НЕ пишет в метрики (только server)
     scProbes.push("INSERT INTO server_checker.metric_snapshot (server_id, collect_ok) VALUES (1, true)");
   } catch { /* схемы нет — probe пропускаем */ }
-  for (const probe of [
+  // E11: кабинет НЕ пишет дайджесты (их пишет бот) и НЕ удаляет привязки (unbind = UPDATE)
+  const tgProbes = [
+    "INSERT INTO tg_assistant.tg_digests (project_slug, date, content_md) VALUES ('x', '2026-01-01', 'x')",
+    "DELETE FROM tg_assistant.tg_chat_bindings WHERE chat_id = -1",
+  ];
+  const probes = [
     "SELECT count(*) FROM public.task",
     "INSERT INTO public.task (project_id) VALUES (1)",
     "UPDATE nexus_admin.sync_meta SET value = 'x' WHERE key = 'last_sync_at'",
     ...scProbes,
-  ]) {
+    ...tgProbes,
+  ];
+  for (const probe of probes) {
     try {
       await app.query(probe);
       console.error("ДЫРА: разрешено →", probe);
@@ -96,7 +122,7 @@ try {
       }
     }
   }
-  console.log(`границы: ${denied}/${3 + scProbes.length} запрещённых операций отклонено`);
+  console.log(`границы: ${denied}/${probes.length} запрещённых операций отклонено`);
 } finally {
   await app.end();
 }

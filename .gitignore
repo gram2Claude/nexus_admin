@@ -54,3 +54,8 @@ scripts/sync/sync-run.cmd
 .gstack/
 TEMP_VPS_ACCESS.txt
 TEMP_NEW_PASSWORD.txt
+.ontoindex
+.claude/tg_target.json
+
+# dev-сервер координатора (порт 3100) — лог
+.dev*.log

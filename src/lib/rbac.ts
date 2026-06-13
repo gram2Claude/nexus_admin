@@ -31,6 +31,8 @@ export const can = {
   seeServers: (r: Role) => r === "owner" || r === "admin",
   /** Добавление/редактирование серверов под наблюдением */
   manageServers: (r: Role) => r === "owner" || r === "admin",
+  /** Привязка чата к проекту в разделе «Чаты» (E11, спека 2.1 §3, ревизия 2026-06-13) */
+  bindChats: (r: Role) => r === "owner" || r === "admin",
 } as const;
 
 /**
