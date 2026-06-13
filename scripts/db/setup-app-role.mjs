@@ -28,6 +28,11 @@ try {
   `);
   await client.query(`ALTER ROLE nexus_admin_app LOGIN PASSWORD '${password}'`);
 
+  // statement_timeout на УРОВНЕ РОЛИ (TIME-80, DoS-харднинг): потолок времени запроса 15с.
+  // На уровне роли (а не только startup-параметром пула db.ts) — чтобы реально применялось через
+  // transaction-pooler Supavisor, который startup-параметры может не пробрасывать (ревью).
+  await client.query("ALTER ROLE nexus_admin_app SET statement_timeout = '15s'");
+
   await client.query("GRANT USAGE ON SCHEMA nexus_admin TO nexus_admin_app");
   await client.query("GRANT SELECT ON ALL TABLES IN SCHEMA nexus_admin TO nexus_admin_app");
   await client.query(
