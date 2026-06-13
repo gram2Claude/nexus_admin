@@ -47,10 +47,13 @@ try {
   // привязки (источник истины, bound_via='cabinet'); дайджесты/темы/журнал кабинет не пишет
   // (их пишет бот ролью tg_assistant_bot). Схему/таблицы владеет timechecker (миграция v6).
   await client.query("GRANT USAGE ON SCHEMA tg_assistant TO nexus_admin_app");
-  // Явный per-table SELECT (НЕ "ON ALL TABLES"): tg_assistant — чужая схема (владелец
-  // timechecker); кабинет не должен авто-получать чтение на любые будущие таблицы бота.
-  // REVOKE сначала — идемпотентно сужает прежний широкий грант (ревью codex).
-  await client.query("REVOKE SELECT ON ALL TABLES IN SCHEMA tg_assistant FROM nexus_admin_app");
+  // Набор АВТОРИТЕТНЫЙ: REVOKE ALL (таблицы + sequences) снимает любые прежние/ручные лишние
+  // права роли, затем выдаём ровно нужное — ре-ран не оставит лишних INSERT/UPDATE/DELETE
+  // (ревью codex). Per-table SELECT (НЕ "ON ALL TABLES"): tg_assistant — чужая схема (владелец
+  // timechecker), не авто-наследуем будущие таблицы бота. На sequence журнала кабинету ничего
+  // не нужно (он не пишет journal).
+  await client.query("REVOKE ALL ON ALL TABLES IN SCHEMA tg_assistant FROM nexus_admin_app");
+  await client.query("REVOKE ALL ON ALL SEQUENCES IN SCHEMA tg_assistant FROM nexus_admin_app");
   await client.query(
     "GRANT SELECT ON tg_assistant.tg_chat_bindings, tg_assistant.tg_digests, " +
       "tg_assistant.tg_topics, tg_assistant.tg_journal TO nexus_admin_app"
@@ -96,9 +99,12 @@ try {
     // схема есть → негативный probe: кабинет НЕ пишет в метрики (только server)
     scProbes.push("INSERT INTO server_checker.metric_snapshot (server_id, collect_ok) VALUES (1, true)");
   } catch { /* схемы нет — probe пропускаем */ }
-  // E11: кабинет НЕ пишет дайджесты (их пишет бот) и НЕ удаляет привязки (unbind = UPDATE)
+  // E11: кабинет НЕ пишет дайджесты/темы/журнал (их пишет бот) и НЕ удаляет привязки
+  // (unbind = UPDATE project_slug=NULL). Пробы по периметру всех 4 таблиц.
   const tgProbes = [
     "INSERT INTO tg_assistant.tg_digests (project_slug, date, content_md) VALUES ('x', '2026-01-01', 'x')",
+    "UPDATE tg_assistant.tg_topics SET content_md = 'x' WHERE project_slug = '__no_such__'",
+    "INSERT INTO tg_assistant.tg_journal (project_slug, kind, date, text, norm_text) VALUES ('x','decision','2026-01-01','x','x')",
     "DELETE FROM tg_assistant.tg_chat_bindings WHERE chat_id = -1",
   ];
   const probes = [
