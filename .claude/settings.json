@@ -10,6 +10,16 @@
                                                              "timeout":  15
                                                          }
                                                      ]
+                                       },
+                                       {
+                                           "matcher":  "",
+                                           "hooks":  [
+                                                         {
+                                                             "type":  "command",
+                                                             "command":  "node \"C:\\Users\\Oleg\\.claude\\tools\\ontoindex\\ontoindex-claude-plugin\\hooks\\ontoindex-hook.js\"",
+                                                             "timeout":  10
+                                                         }
+                                                     ]
                                        }
                                    ],
                   "SessionEnd":  [
@@ -62,7 +72,7 @@
                                  ],
                   "PostToolUse":  [
                                       {
-                                          "matcher":  "Bash",
+                                          "matcher":  "Edit|Write|MultiEdit|Bash",
                                           "hooks":  [
                                                         {
                                                             "type":  "command",
