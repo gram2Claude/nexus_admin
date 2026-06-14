@@ -23,8 +23,9 @@ export function pgConfig(opts = {}) {
   if (opts.sessionMode) {
     // transaction-пул → session. Supabase Supavisor: порт 6543→5432;
     // self-host PgBouncer: единый порт, session-логическая БД postgres_session.
-    if (u.port === "6543") u.port = "5432";
-    else u.pathname = `/${process.env.DB_SESSION_DBNAME || "postgres_session"}`;
+    if (u.port === "6543") u.port = "5432";                       // Supabase Supavisor: txn→session порт
+    else if (process.env.DB_SESSION_DBNAME)                       // self-host: ЯВНЫЙ opt-in (ревью: не «любой не-6543»)
+      u.pathname = `/${process.env.DB_SESSION_DBNAME}`;           //   DDL/миграции self-host: DB_SESSION_DBNAME=postgres_session
   }
   if (!existsSync(caPath)) throw new Error(`Нет CA-файла ${caPath} — TLS-проверку не отключаем`);
   return {
