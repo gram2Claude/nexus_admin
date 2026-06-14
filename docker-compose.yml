@@ -10,6 +10,9 @@ services:
     expose:
       - "3000"
     env_file: .env.production
+    # БД (PgBouncer на хосте WEECERE) доступна контейнеру через host-gateway (E12 cutover)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     # мисконфиг виден в docker compose ps, а не на первом запросе (ревью эпохи 6)
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/login"]
